@@ -284,49 +284,17 @@ export function toCents(amount) {
   return Number.isFinite(n) ? Math.round(n * 100) : 0;
 }
 
-// The checkout/order custom fields that tie a Wix order to the app.
+// The order custom field that ties a Wix order to the phone that placed it.
 export const FIELD_DEVICE = 'Design Your Pet app device';
-export const FIELD_DESIGNS = 'Design Your Pet designs';
-// Which design goes on which line: "designId|productId|variantId,..." in cart order.
-export const FIELD_LINES = 'Design Your Pet lines';
 
-export function encodeLines(entries) {
-  return entries.map((e) => `${e.designId}|${e.productId}|${e.variantId}`).join(',');
-}
+// Each line carries its design the same way the website's cart does: a
+// custom text field "designRecordId", which Wix shows as a description line
+// and the site's events.js reads to send the line to Printful.
+export const DESIGN_FIELD = 'designRecordId';
 
-// Store products have no custom-text field, so a line item can't carry its
-// design. Instead the checkout lists design/product/variant in order, and each
-// order line takes the first unused entry with the same product and variant.
-// Returns the design id for `target`, or null.
-export function designForLine(encoded, lineItems, target) {
-  const entries = String(encoded ?? '')
-    .split(',')
-    .filter(Boolean)
-    .map((e) => {
-      const [designId, productId, variantId] = e.split('|');
-      return { designId, productId, variantId, used: false };
-    });
-  const key = (l) => [l.catalogReference?.catalogItemId, l.catalogReference?.options?.variantId];
-  const idOfLine = (l) => l?._id ?? l?.id;
-  for (const line of lineItems ?? []) {
-    const [productId, variantId] = key(line);
-    const entry = entries.find((e) => !e.used && e.productId === productId && e.variantId === variantId);
-    if (entry) entry.used = true;
-    if (idOfLine(line) === idOfLine(target)) return entry ? entry.designId : null;
-  }
-  return null;
-}
-
-// Wix merges checkout lines that point at the same product variant, so two
-// different designs on the same variant can't be told apart on the order.
-export function conflictingLines(entries) {
-  const seen = new Map();
-  for (const e of entries) {
-    const k = `${e.productId}|${e.variantId}`;
-    if (seen.has(k) && seen.get(k) !== e.designId) return true;
-    seen.set(k, e.designId);
-  }
-  return false;
+export function designIdOfLine(lineItem) {
+  const line = (lineItem?.descriptionLines ?? []).find((l) => l.name?.original === DESIGN_FIELD || l.name?.translated === DESIGN_FIELD);
+  return line?.plainText?.original ?? line?.plainText?.translated ?? null;
 }
 
 export function readCustomField(entity, title) {

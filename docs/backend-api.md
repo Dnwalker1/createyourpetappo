@@ -43,7 +43,6 @@ Any non-2xx response has this body:
 | `TRIES_LIMIT` | 429 | 12 attempts in the rolling 24 hours. `unlocksAt` = oldest attempt + 24 h. | 12 tries |
 | `STUDIO_BUSY` | 503 | Site-wide ceiling of 180 designs an hour. Uses nothing. | Studio busy |
 | `DESIGN_IN_PROGRESS` | 409 | This device already has a design being made. | Inline notice on the style screen |
-| `CART_CONFLICT` | 409 | Checkout: two different designs on the same product, colour and size. | Inline notice on the checkout screen |
 
 Times are ISO 8601 strings in UTC. The app shows them in the customer's local
 time.
@@ -191,11 +190,12 @@ app and answers with a 302 into the app. The site's `events.js` /
 `printfulOrders.js` sends each line to Printful and marks its design ordered. If the customer closes checkout
 without paying, nothing happens and the app keeps the cart.
 
-The device ID, design IDs and which design goes on which line travel on the
-checkout as custom fields ("Design Your Pet app device", "Design Your Pet
-designs", "Design Your Pet lines"), so they show on the order in the dashboard
-too. Two different designs on the same product, colour and size in one cart
-are refused with `CART_CONFLICT`, because Wix merges them into one line.
+Each line carries its design exactly as the website's cart does: a custom
+text field `designRecordId` in `catalogReference.options.customTextFields`.
+Wix shows it as a description line on the order, and the site's `events.js`
+reads it to send that line to Printful, so app orders need no change there.
+The device ID travels as the checkout custom field "Design Your Pet app
+device", which My orders uses to check ownership.
 
 ### `GET /_functions/dyp/orders?deviceId=…&ids=a,b,c`
 

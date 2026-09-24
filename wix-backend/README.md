@@ -22,23 +22,9 @@ Pet page.
    `designs.js` and `store.js` with the contents of the files here.
 4. Add `http-functions.js` to **Backend**. If the site already has one, paste
    in the three `*_dyp` functions and the imports instead of replacing it.
-5. In `backend/events.js`, where the paid-order event finds the design for
-   each line item and calls `fulfillPetDesignLineItem`, ask the app first:
-
-   ```js
-   import { appDesignForLineItem } from 'backend/dyp/store';
-
-   // for each line item of a paid order:
-   const designId = (await appDesignForLineItem(order, lineItem)) ?? /* the website's existing lookup */;
-   await fulfillPetDesignLineItem(order, lineItem, designId);
-   ```
-
-   `appDesignForLineItem` returns `null` for website orders, so they carry on
-   exactly as now. Store products have no custom-text field, so the app
-   records which design goes on which line in an order custom field
-   ("Design Your Pet lines") and matches lines by product and variant.
-   `printfulOrders.js` then sends it to Printful and marks the design
-   `ordered`, as it does for the website.
+5. Nothing to add to `backend/events.js`. App orders carry `designRecordId`
+   on each line exactly like website orders, so your existing
+   `handleOrder` → `fulfillPetDesignLineItem` sends them to Printful.
 6. Add the app's photo clean-up to the nightly job that already runs
    `deleteOldUnorderedDesigns(7)` (in the site's `backend/jobs.config` job
    function):
@@ -100,9 +86,10 @@ What the app backend adds around it:
   approval shows as "In review", pending or in process as "Printing",
   fulfilled as "Shipped" with Printful's tracking link. `store.js` imports
   `PRINTFUL_BASE` and `printfulHeaders` from `backend/printfulShared`.
-- Two different designs on the same product, colour and size in one cart
-  are refused at checkout: Wix merges identical variants into one line, and
-  then there's no telling which design to print.
+- Each checkout line carries `customTextFields: { designRecordId }`, the
+  same as the website's cart. Tested on the live store: it becomes the
+  `designRecordId` description line `events.js` reads, and two designs on
+  the same variant stay separate lines.
 - `www.goodwookie.com` must be allowed as a redirect domain for checkout
   callbacks (Settings → Headless settings → Allowed redirect domains) if Wix
   asks for it.

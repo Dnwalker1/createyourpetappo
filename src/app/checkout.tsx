@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api, ApiError, CheckoutLine } from '../api';
+import { api, CheckoutLine } from '../api';
 import { Alert, Body, Button, Card, Label, Screen, TitleBar } from '../components/ui';
 import { describeChoice } from '../data/catalog';
 import { cartTotals, itemCents } from '../lib/cart';
@@ -16,7 +16,7 @@ import { colors, fonts } from '../theme';
 export default function Checkout() {
   const { deviceId, cart, clearCart, addOrder } = useAppState();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<false | 'network' | 'conflict'>(false);
+  const [failed, setFailed] = useState(false);
   const totals = cartTotals(cart);
 
   async function pay() {
@@ -44,8 +44,8 @@ export default function Checkout() {
         }
       }
       // Closed without paying: nothing changes, the cart is kept.
-    } catch (e) {
-      setFailed(e instanceof ApiError && e.code === 'CART_CONFLICT' ? 'conflict' : 'network');
+    } catch {
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -107,13 +107,7 @@ export default function Checkout() {
         </View>
         <Body style={{ fontSize: 14 }}>The options you see depend on your phone. You&apos;ll enter your shipping address on the next screen.</Body>
       </View>
-      {failed === 'conflict' ? (
-        <Alert title="Two designs on the same item">
-          <Body>
-            Two different designs are on the same product in the same colour and size. Change the colour or size of one, or check out one of them first.
-          </Body>
-        </Alert>
-      ) : failed ? (
+      {failed ? (
         <Alert title="Checkout didn't open">
           <Body>Check your connection and try again. Your cart is still here.</Body>
         </Alert>

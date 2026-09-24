@@ -11,12 +11,9 @@ import { fetch } from 'wix-fetch';
 import { PRINTFUL_BASE, printfulHeaders } from 'backend/printfulShared';
 import {
   DAY_MS,
-  FIELD_DESIGNS,
+  DESIGN_FIELD,
   FIELD_DEVICE,
-  FIELD_LINES,
-  conflictingLines,
-  designForLine,
-  encodeLines,
+  designIdOfLine,
   PRODUCT_IDS,
   STORES_APP_ID,
   findApparelVariantId,
@@ -78,30 +75,28 @@ export async function createAppCheckout(deviceId, lines, returnUrl) {
   }
   await orderableDesigns(deviceId, parsed.designIds);
 
-  const entries = [];
+  const lineItems = [];
   for (const item of parsed.items) {
-    entries.push({ ...item, productId: PRODUCT_IDS[item.choice.product], variantId: await variantIdFor(item.choice) });
+    lineItems.push({
+      quantity: item.quantity,
+      catalogReference: {
+        appId: STORES_APP_ID,
+        catalogItemId: PRODUCT_IDS[item.choice.product],
+        // designRecordId is what the website's cart adds too: it becomes a
+        // description line on the order, which events.js reads to send the
+        // line to Printful. It also keeps two designs on the same variant as
+        // separate lines.
+        options: { variantId: await variantIdFor(item.choice), customTextFields: { [DESIGN_FIELD]: item.designId } },
+      },
+    });
   }
-  if (conflictingLines(entries)) {
-    throw new DypError('CART_CONFLICT', 409, 'Two different designs on the same product, colour and size need separate orders.');
-  }
-  const lineItems = entries.map((e) => ({
-    quantity: e.quantity,
-    catalogReference: { appId: STORES_APP_ID, catalogItemId: e.productId, options: { variantId: e.variantId } },
-  }));
 
   const created = await elevated.createCheckout({
     lineItems,
     channelType: 'WEB',
     checkoutInfo: {
-      // These tie the order back to the phone and say which design goes on
-      // which line (see appDesignForLineItem). They also show on the order in
-      // the dashboard.
-      customFields: [
-        { title: FIELD_DEVICE, value: deviceId },
-        { title: FIELD_DESIGNS, value: parsed.designIds.join(',') },
-        { title: FIELD_LINES, value: encodeLines(entries) },
-      ],
+      // Ties the order back to the phone, for My orders.
+      customFields: [{ title: FIELD_DEVICE, value: deviceId }],
     },
   });
   const checkoutId = created._id ?? created.checkout?._id;
@@ -136,28 +131,13 @@ async function orderForCheckout(checkoutId, orderIdHint) {
   return null;
 }
 
-// The app's custom fields for an order. They're set on the checkout; if the
-// order doesn't carry them, read them from the checkout it came from.
-async function appFields(order) {
-  let source = order;
-  if (!readCustomField(order, FIELD_DEVICE) && order.checkoutId) {
-    const res = await elevated.getCheckout(order.checkoutId).catch(() => null);
-    source = res?.checkout ?? res ?? order;
-  }
-  return {
-    deviceId: readCustomField(source, FIELD_DEVICE),
-    designIds: (readCustomField(source, FIELD_DESIGNS) ?? '').split(',').filter(Boolean),
-    lines: readCustomField(source, FIELD_LINES),
-  };
-}
-
-// For backend/events.js: the PetDesigns record to print for one line of an
-// order placed from the app, or null if the order didn't come from the app.
-// Pass the result to fulfillPetDesignLineItem(order, lineItem, designId).
-export async function appDesignForLineItem(order, lineItem) {
-  const fields = await appFields(order);
-  if (!fields.deviceId || !fields.lines) return null;
-  return designForLine(fields.lines, order.lineItems, lineItem);
+// The phone an order was placed from, or null for website orders. Set on the
+// checkout; if the order doesn't carry it, read it from that checkout.
+async function orderDevice(order) {
+  const onOrder = readCustomField(order, FIELD_DEVICE);
+  if (onOrder || !order.checkoutId) return onOrder;
+  const res = await elevated.getCheckout(order.checkoutId).catch(() => null);
+  return readCustomField(res?.checkout ?? res, FIELD_DEVICE);
 }
 
 // GET /return — where Wix sends the browser after checkout. Redirects into
@@ -169,7 +149,7 @@ export async function handleCheckoutReturn(query) {
   if (!order) return withQuery(to, { checkoutId: query.checkoutId });
   // Only hand out orders the app made. Printful fulfilment (events.js) marks
   // the designs as ordered once the order is paid.
-  if (!(await appFields(order)).deviceId) return to;
+  if (!(await orderDevice(order))) return to;
   return withQuery(to, { orderId: order._id });
 }
 
@@ -211,8 +191,7 @@ export async function listAppOrders(deviceId, ids) {
   for (const id of wanted) {
     const order = await elevated.getOrder(id).catch(() => null);
     if (!order || order.status === 'INITIALIZED') continue;
-    const fields = await appFields(order);
-    if (fields.deviceId !== deviceId) continue;
+    if ((await orderDevice(order)) !== deviceId) continue;
     const printful = await printfulProgress(order);
     const tracking = printful.tracking ?? (await wixTrackingUrl(order._id));
     out.push({
@@ -224,7 +203,7 @@ export async function listAppOrders(deviceId, ids) {
       itemCount: (order.lineItems ?? []).reduce((n, l) => n + (l.quantity ?? 1), 0),
       totalCents: toCents(order.priceSummary?.total?.amount),
       trackingUrl: tracking,
-      previewUrl: await previewForDesign(fields.designIds[0]),
+      previewUrl: await previewForDesign((order.lineItems ?? []).map(designIdOfLine).find(Boolean)),
     });
   }
   return out.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
