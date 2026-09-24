@@ -22,7 +22,7 @@ the live Wix backend provides are in `docs/backend-api.md`.
 |---|---|---|---|
 | 1 | Welcome | `Main.dc.html` | Badge logo, sample designs, "Get started". |
 | 2 | Step 1: Add your photo | `Upload.dc.html` | Take or choose a photo; photo tips; confirm "I own this photo and there are no children in it." |
-| 3 | Steps 2–3: Style and text | `Style.dc.html` | Pick one of four styles. Optional text, up to 18 characters, only for Travel Stamp and Travel Poster. |
+| 3 | Steps 2–3: Style and text | `Style.dc.html` | Pick one of four styles. Optional text, up to 18 characters, only for Travel Stamp and Travel Poster. "Include the people in my photo" switch, off by default; when on, Generate needs the adults-and-consent checkbox. |
 | 4 | Step 4: Generate | `Generating.dc.html` | About a minute. |
 | 5 | Step 5: Pick your product | `Result.dc.html` | Design shown on a tee; "Try another style", "Use a new photo"; product list; bundle card. |
 | 6 | Product options | `Product.dc.html` | Product tabs, colour, size, price per size. |
@@ -41,6 +41,12 @@ Travel Stamp, Travel Poster, Evening Portrait, Adventure Sticker.
 Text (max 18 characters) is allowed on Travel Stamp and Travel Poster only.
 Works for any animal. Two or three pets in one photo is fine; more than that
 switches to portrait heads.
+
+People are left out of the artwork unless the customer switches on "Include
+the people in my photo" on the style screen and ticks "Everyone in this photo
+is 18 or older and agreed to be in the design." Then everyone in the photo is
+drawn together with the pets, up to 6 people and pets in total. Photos that
+appear to include a child are refused either way.
 
 ## Products and prices
 
@@ -130,7 +136,7 @@ Show each screen when its error happens, not from a button.
 | Upload fails | `UploadError.dc.html` | "Your photo didn't finish uploading … Nothing was used up." |
 | Photo checker unavailable | `CheckerDown.dc.html` | "Try again in a minute. Nothing was used up." |
 | No animal found in the photo | `NoPetFound.dc.html` | "We couldn't find a pet in this photo … it won't count toward your 5 designs." |
-| Photo fails the content check | `PhotoRejected.dc.html` | States the reason; repeats the ground rules; "This won't count toward your 5 designs." |
+| Photo fails the content check | `PhotoRejected.dc.html` | States the reason (a child, a well-known person, more than 6 people and pets, or general content); repeats the ground rules; "This won't count toward your 5 designs." |
 | Text rejected (profanity, protected names or titles) | `TextRejected.dc.html` | Blocks Generate until fixed; offers "Generate without text". |
 | Design fails | `GenerateFailed.dc.html` | "This one didn't work out, so it won't count toward your 5 designs." |
 | 5 designs in 24 hours | `LimitReached.dc.html` | "Your next free design unlocks at [local time]." |
@@ -208,7 +214,9 @@ September 23, 2026, is in `docs/privacy-policy.md`. What it commits the app to:
   straight away. Unordered designs and their photos are deleted after 7 days.
 - **Not used for** marketing, advertising or training AI models. Nothing is sold.
 - **Children:** not directed at children under 13.
-- **People in photos** are left out of the artwork.
+- **People in photos** are left out of the artwork unless the customer switches
+  on "Include the people in my photo" and confirms everyone is 18 or older and
+  agreed to be in the design. Photos that appear to include a child are refused.
 
 ### Consent before sending a photo to AI
 
@@ -221,6 +229,10 @@ Continue is enabled:
 2. "I agree that my photo, and any text I add, is sent to Google's Gemini AI to
    create my design and run safety checks." with a link to the privacy policy.
 
+When the customer switches on "Include the people in my photo" on the style
+screen (`Style.dc.html`), a third checkbox is required before Generate:
+"Everyone in this photo is 18 or older and agreed to be in the design."
+
 ### Store privacy disclosures (draft from the policy)
 
 Use this when filling in Apple's App Privacy section and Google Play's Data
@@ -228,7 +240,7 @@ safety form. Confirm each answer against the final build.
 
 | Data | Collected | Linked to identity | Purpose |
 |---|---|---|---|
-| Photos (pet photo you upload) | Yes | No, until you order | App functionality |
+| Photos (pet photo you upload, and the adults in it if you include people) | Yes | No, until you order | App functionality |
 | Other user content (text on the design) | Yes | No, until you order | App functionality |
 | Device ID | Yes | No | App functionality (My Designs, design limits) |
 | Name, email, phone (optional), shipping address | Yes, at checkout (Wix) | Yes | Order fulfilment |
@@ -254,7 +266,7 @@ before submitting. If the app supports iPad, Apple also needs iPad screenshots.
 
 **App name** (29 / 30): Design Your Pet by Goodwookie
 
-**Description** (896 / 4000; also the Google Play full description):
+**Description** (1034 / 4000; also the Google Play full description):
 
 > Put your best friend on a shirt.
 >
@@ -268,6 +280,9 @@ before submitting. If the app supports iPad, Apple also needs iPad screenshots.
 >
 > Works for any animal: dogs, cats, horses, and the goat you swore you weren't
 > going to name. Two or three pets in one photo works too.
+>
+> Want to be in it with them? Switch on "Include the people in my photo" and
+> the adults in your photo are drawn right alongside your pets.
 >
 > Five free designs every 24 hours. No account, no card, and nothing gets
 > printed until you order it.
@@ -285,8 +300,8 @@ before submitting. If the app supports iPad, Apple also needs iPad screenshots.
 **Subtitle** (24 / 30): Your pet as art on a tee
 
 **Promotional text** (139 / 170; can change without a new review):
-Turn one photo of your pet into original artwork for a tee, hoodie, sticker or
-poster. Five free designs every 24 hours, no account needed.
+Turn a photo of your pet, or of you together, into original artwork for a tee,
+hoodie, sticker or poster. Five free designs every 24 hours.
 
 **Keywords** (99 / 100; comma separated, no spaces):
 `pet portrait,dog shirt,cat shirt,custom pet,pet art,dog gift,cat gift,pet sticker,pet poster,hoodie`
