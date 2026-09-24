@@ -13,6 +13,9 @@ updated.
 Design canvas (screens, copy, layout):
 https://claude.ai/artifact/LCuV9ETQ3znW6MzhWTWgJn
 
+The app is built in this repo (Expo, `src/`; see `README.md`). The endpoints
+the Wix site needs to expose for it are in `docs/backend-api.md`.
+
 ## Flow
 
 | # | Screen | Canvas file | Notes |
