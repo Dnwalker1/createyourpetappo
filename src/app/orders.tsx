@@ -29,7 +29,7 @@ const NOTES: Record<OrderStatus, string> = {
 const formatDate = (ms: number) => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function Orders() {
-  const { deviceId, orderIds } = useAppState();
+  const { deviceId } = useAppState();
   const [orders, setOrders] = useState<Order[] | null>(null);
 
   useFocusEffect(
@@ -37,13 +37,13 @@ export default function Orders() {
       if (!deviceId) return;
       let live = true;
       api
-        .getOrders(deviceId, orderIds)
+        .getOrders(deviceId)
         .then((o) => live && setOrders(o.sort((a, b) => b.createdAt - a.createdAt)))
         .catch(() => live && setOrders([]));
       return () => {
         live = false;
       };
-    }, [deviceId, orderIds]),
+    }, [deviceId]),
   );
 
   return (

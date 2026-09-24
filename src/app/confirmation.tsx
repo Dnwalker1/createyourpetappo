@@ -1,10 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
-import { api } from '../api';
 import { Body, Button, H1, Screen } from '../components/ui';
-import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 const pawSunset = require('../../assets/images/brand/paw-sunset-icon.webp');
@@ -21,20 +18,10 @@ function Step({ n, title, children }: { n: number; title: string; children: stri
   );
 }
 
-// Also the deep-link target Wix returns to: designyourpet://confirmation?orderId=…
+// Shown after the backend confirms the checkout was paid. `number` is the
+// real Wix order number.
 export default function Confirmation() {
-  const { orderId } = useLocalSearchParams<{ orderId?: string }>();
-  const { deviceId, addOrder } = useAppState();
-  const [number, setNumber] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!orderId || !deviceId) return;
-    addOrder(orderId);
-    api
-      .getOrders(deviceId, [orderId])
-      .then(([o]) => o && setNumber(o.number))
-      .catch(() => undefined);
-  }, [orderId, deviceId, addOrder]);
+  const { number } = useLocalSearchParams<{ number?: string }>();
 
   return (
     <Screen

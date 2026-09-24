@@ -14,12 +14,14 @@ export default function Style() {
   const [busy, setBusy] = useState(false);
   const [textError, setTextError] = useState<string | null>(null);
   const [inProgress, setInProgress] = useState(false);
+  const [checkerBusy, setCheckerBusy] = useState(false);
   const style = styleById(styleId);
 
   async function generate() {
     setBusy(true);
     setTextError(null);
     setInProgress(false);
+    setCheckerBusy(false);
     try {
       const designId = await startDesign();
       router.push({ pathname: '/generating', params: { designId } });
@@ -28,6 +30,8 @@ export default function Style() {
         setTextError("That text can't be printed. Please avoid profanity and trademarked names or titles. Try your pet's own name instead.");
       } else if (e instanceof ApiError && e.code === 'DESIGN_IN_PROGRESS') {
         setInProgress(true);
+      } else if (e instanceof ApiError && e.code === 'TEXT_CHECKER_DOWN') {
+        setCheckerBusy(true);
       } else {
         router.push(problemRoute(e) as never);
       }
@@ -121,6 +125,11 @@ export default function Style() {
       {inProgress ? (
         <Alert title="A design is already being made">
           <Body>Only one design can be made at a time. Wait for it to finish, then try again.</Body>
+        </Alert>
+      ) : null}
+      {checkerBusy ? (
+        <Alert title="Our text checker is busy">
+          <Body>Try again in a minute. Nothing was used up.</Body>
         </Alert>
       ) : null}
     </Screen>

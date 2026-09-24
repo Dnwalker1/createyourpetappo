@@ -11,12 +11,15 @@ const BLOCKED_TEXT = [/skywalker/i, /\bdisney\b/i, /\bmickey\b/i];
 
 type MockDesign = DesignRecord & { styleId: StyleId; text?: string; readyAt: number };
 
+export const MOCK_CHECKOUT_URL = 'mock://checkout';
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
   const designs = new Map<string, MockDesign>();
   const photos = new Set<string>();
   const orders = new Map<string, Order>();
+  const checkouts = new Map<string, Order>();
   let counter = 0;
   let orderNumber = 10041;
 
@@ -78,12 +81,12 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
       return { available: s.available, nextDesignAt: s.nextDesignAt, blockedBy: s.blockedBy, unlocksAt: s.unlocksAt };
     },
 
-    async createCheckout(_deviceId, lines: CheckoutLine[], returnUrl) {
+    async createCheckout(_deviceId, lines: CheckoutLine[]) {
       await wait(300);
-      const id = `order-${++counter}`;
+      const id = `checkout-${++counter}`;
       const itemCount = lines.reduce((n, l) => n + (l.kind === 'bundle' ? 4 : l.quantity), 0);
       const first = lines[0] && designs.get(lines[0].designId);
-      orders.set(id, {
+      checkouts.set(id, {
         id,
         number: String(++orderNumber),
         createdAt: now(),
@@ -97,13 +100,18 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
         const d = designs.get(l.designId);
         if (d) d.status = 'ordered';
       }
-      // A real checkout URL is a Wix page; the mock returns straight to the app.
-      const sep = returnUrl.includes('?') ? '&' : '?';
-      return { checkoutUrl: `${returnUrl}${sep}orderId=${id}` };
+      // A real checkout URL is a Wix page; the mock's is paid straight away.
+      return { checkoutId: id, checkoutUrl: MOCK_CHECKOUT_URL };
     },
 
-    async getOrders(_deviceId, orderIds) {
-      return orderIds.map((id) => orders.get(id)).filter((o): o is Order => Boolean(o));
+    async getCheckoutStatus(_deviceId, checkoutId) {
+      const order = checkouts.get(checkoutId);
+      if (order) orders.set(order.id, order);
+      return { completed: Boolean(order), orderNumber: order?.number ?? null };
+    },
+
+    async getOrders() {
+      return [...orders.values()].sort((a, b) => b.createdAt - a.createdAt);
     },
   };
 }

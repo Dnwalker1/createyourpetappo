@@ -16,12 +16,18 @@ export type ErrorCode =
   | 'TRIES_LIMIT'
   | 'STUDIO_BUSY'
   | 'DESIGN_IN_PROGRESS'
+  | 'TEXT_CHECKER_DOWN'
+  | 'CART_ITEM_UNAVAILABLE'
   | 'NETWORK';
 
 export class ApiError extends Error {
   code: ErrorCode;
   /** When a limit error unlocks, in ms since epoch. */
   unlocksAt?: number;
+  /** The backend's own code (for example "upload_not_ready"), when there is one. */
+  backendCode?: string;
+  /** The whole error body from the backend, for fields like retryAfterMs or designId. */
+  details?: Record<string, unknown>;
 
   constructor(code: ErrorCode, message?: string, unlocksAt?: number) {
     super(message ?? code);
@@ -75,10 +81,9 @@ export interface DesignYourPetApi {
   /** Uploads the photo. Throws UPLOAD_FAILED; creates no design record. */
   uploadPhoto(deviceId: string, photo: PhotoInput): Promise<{ photoId: string }>;
   /**
-   * Starts a design. The backend creates the record, checks the photo and text,
-   * then generates. Throws NO_PET, PHOTO_REJECTED, TEXT_REJECTED,
-   * CHECKER_UNAVAILABLE, LIMIT_REACHED, TRIES_LIMIT, STUDIO_BUSY or
-   * DESIGN_IN_PROGRESS.
+   * Starts a design. Throws TEXT_REJECTED, TEXT_CHECKER_DOWN, LIMIT_REACHED,
+   * TRIES_LIMIT, STUDIO_BUSY or DESIGN_IN_PROGRESS. The photo is checked while
+   * the design is made, so no-pet and rejected photos arrive on the design.
    */
   createDesign(deviceId: string, input: { photoId: string; styleId: StyleId; text?: string }): Promise<{ designId: string }>;
   getDesign(deviceId: string, designId: string): Promise<Design>;
@@ -86,6 +91,9 @@ export interface DesignYourPetApi {
   listDesigns(deviceId: string): Promise<Design[]>;
   getLimits(deviceId: string): Promise<Limits>;
   /** Builds a Wix checkout for the cart. The app opens the URL; Wix takes payment. */
-  createCheckout(deviceId: string, lines: CheckoutLine[], returnUrl: string): Promise<{ checkoutUrl: string }>;
-  getOrders(deviceId: string, orderIds: string[]): Promise<Order[]>;
+  createCheckout(deviceId: string, lines: CheckoutLine[]): Promise<{ checkoutId: string; checkoutUrl: string }>;
+  /** Whether the customer paid, checked after the checkout browser closes. */
+  getCheckoutStatus(deviceId: string, checkoutId: string): Promise<{ completed: boolean; orderNumber: string | null }>;
+  /** Every order placed from this device, newest first. */
+  getOrders(deviceId: string): Promise<Order[]>;
 }

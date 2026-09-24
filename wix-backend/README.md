@@ -1,4 +1,10 @@
-# Wix backend for the Design Your Pet app
+# Wix backend for the Design Your Pet app (superseded)
+
+> **Superseded.** The live backend is the one built on the site at
+> `https://www.goodwookie.com/_functions` and described in
+> [`docs/backend-api.md`](../docs/backend-api.md). The app now talks to that
+> backend. This folder is an earlier draft, kept for reference only; don't
+> install it.
 
 Velo code for the goodwookie.com site. It implements the endpoints in
 [`docs/backend-api.md`](../docs/backend-api.md) at

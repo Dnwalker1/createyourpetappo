@@ -5,7 +5,7 @@ import { api, Design, PhotoInput } from '../api';
 import type { StyleId } from '../data/catalog';
 import type { CartItem, NewCartItem } from '../lib/cart';
 
-const KEYS = { deviceId: 'dyp.deviceId', cart: 'dyp.cart', orders: 'dyp.orderIds' };
+const KEYS = { deviceId: 'dyp.deviceId', cart: 'dyp.cart' };
 
 type AppState = {
   ready: boolean;
@@ -17,7 +17,6 @@ type AppState = {
   /** The design shown on the result, product and bundle screens. */
   activeDesign: Design | null;
   cart: CartItem[];
-  orderIds: string[];
   setPhoto: (photo: PhotoInput | null) => void;
   setStyleId: (id: StyleId) => void;
   setText: (text: string) => void;
@@ -30,7 +29,6 @@ type AppState = {
   updateQuantity: (id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
-  addOrder: (orderId: string) => void;
 };
 
 const Ctx = createContext<AppState | null>(null);
@@ -53,7 +51,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [text, setText] = useState('');
   const [activeDesign, setActiveDesign] = useState<Design | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orderIds, setOrderIds] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -64,7 +61,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
       setDeviceId(id);
       setCart(await loadJson<CartItem[]>(KEYS.cart, []));
-      setOrderIds(await loadJson<string[]>(KEYS.orders, []));
       setReady(true);
     })();
   }, []);
@@ -72,9 +68,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready) AsyncStorage.setItem(KEYS.cart, JSON.stringify(cart)).catch(() => undefined);
   }, [cart, ready]);
-  useEffect(() => {
-    if (ready) AsyncStorage.setItem(KEYS.orders, JSON.stringify(orderIds)).catch(() => undefined);
-  }, [orderIds, ready]);
 
   const setPhoto = useCallback((p: PhotoInput | null) => {
     setPhotoState(p);
@@ -106,7 +99,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       text,
       activeDesign,
       cart,
-      orderIds,
       setPhoto,
       setStyleId,
       setText,
@@ -120,9 +112,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setCart((c) => c.map((i) => (i.id === id && i.kind === 'single' ? { ...i, quantity: Math.max(1, Math.min(10, quantity)) } : i))),
       removeFromCart: (id) => setCart((c) => c.filter((i) => i.id !== id)),
       clearCart: () => setCart([]),
-      addOrder: (orderId) => setOrderIds((o) => (o.includes(orderId) ? o : [orderId, ...o])),
     }),
-    [ready, deviceId, photo, styleId, text, activeDesign, cart, orderIds, setPhoto, ensureUploaded, startDesign],
+    [ready, deviceId, photo, styleId, text, activeDesign, cart, setPhoto, ensureUploaded, startDesign],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

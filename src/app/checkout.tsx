@@ -1,9 +1,8 @@
-import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { api, CheckoutLine } from '../api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, StyleSheet, Text, View } from 'react-native';
+import { api, ApiError, CheckoutLine, MOCK_CHECKOUT_URL } from '../api';
 import { Alert, Body, Button, Card, Label, Screen, TitleBar } from '../components/ui';
 import { describeChoice } from '../data/catalog';
 import { cartTotals, itemCents } from '../lib/cart';
@@ -11,13 +10,54 @@ import { formatMoney } from '../lib/money';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // The app never takes payment. It asks the backend for a Wix checkout, opens
-// it, and Wix sends the customer back to designyourpet://confirmation.
+// it, and when the customer comes back asks whether the order went through.
 export default function Checkout() {
-  const { deviceId, cart, clearCart, addOrder } = useAppState();
+  const { deviceId, cart, clearCart } = useAppState();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<false | 'network' | 'unavailable'>(false);
+  // Set while a checkout is open in the browser and not yet confirmed.
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const checking = useRef(false);
   const totals = cartTotals(cart);
+
+  // Paid? The order can take a moment to appear, so ask a few times.
+  const confirm = useCallback(
+    async (checkoutId: string) => {
+      if (!deviceId || checking.current) return;
+      checking.current = true;
+      setBusy(true);
+      try {
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const status = await api.getCheckoutStatus(deviceId, checkoutId).catch(() => null);
+          if (status?.completed) {
+            setPendingId(null);
+            clearCart();
+            router.replace({ pathname: '/confirmation', params: status.orderNumber ? { number: status.orderNumber } : {} });
+            return;
+          }
+          await wait(1500);
+        }
+        // Not paid (yet): nothing changes, the cart is kept.
+      } finally {
+        checking.current = false;
+        setBusy(false);
+      }
+    },
+    [deviceId, clearCart],
+  );
+
+  // On Android the browser opens alongside the app, so check again whenever
+  // the customer comes back to it.
+  useEffect(() => {
+    if (!pendingId) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') confirm(pendingId);
+    });
+    return () => sub.remove();
+  }, [pendingId, confirm]);
 
   async function pay() {
     if (!deviceId || !cart.length) return;
@@ -29,23 +69,18 @@ export default function Checkout() {
           ? { kind: 'bundle', designId: i.designId, choices: [i.choices.tee, i.choices.hoodie, i.choices.sticker, i.choices.poster] }
           : { kind: 'single', designId: i.designId, choice: i.choice, quantity: i.quantity },
       );
-      const returnUrl = Linking.createURL('/confirmation');
-      const { checkoutUrl } = await api.createCheckout(deviceId, lines, returnUrl);
-      const result = checkoutUrl.startsWith(returnUrl)
-        ? { type: 'success' as const, url: checkoutUrl }
-        : await WebBrowser.openAuthSessionAsync(checkoutUrl, returnUrl);
-      if (result.type === 'success') {
-        const orderId = Linking.parse(result.url).queryParams?.orderId;
-        if (typeof orderId === 'string') {
-          addOrder(orderId);
-          clearCart();
-          router.replace({ pathname: '/confirmation', params: { orderId } });
-          return;
-        }
+      const { checkoutId, checkoutUrl } = await api.createCheckout(deviceId, lines);
+      setBusy(false);
+      if (checkoutUrl === MOCK_CHECKOUT_URL) {
+        await confirm(checkoutId);
+        return;
       }
-      // Closed without paying: nothing changes, the cart is kept.
-    } catch {
-      setFailed(true);
+      setPendingId(checkoutId);
+      const result = await WebBrowser.openBrowserAsync(checkoutUrl);
+      // iOS resolves when the sheet closes; Android as soon as it opens.
+      if (result.type !== 'opened') await confirm(checkoutId);
+    } catch (e) {
+      setFailed(e instanceof ApiError && e.code === 'CART_ITEM_UNAVAILABLE' ? 'unavailable' : 'network');
     } finally {
       setBusy(false);
     }
@@ -55,7 +90,14 @@ export default function Checkout() {
     <Screen
       footer={
         <>
-          <Button title={busy ? 'Opening checkout…' : 'Continue to secure checkout'} disabled={busy || !cart.length} onPress={pay} />
+          {pendingId ? (
+            <>
+              <Button title={busy ? 'Checking your order…' : "I've paid, check my order"} disabled={busy} onPress={() => confirm(pendingId)} />
+              <Button variant="link" title="Open checkout again" disabled={busy} onPress={pay} />
+            </>
+          ) : (
+            <Button title={busy ? 'Opening checkout…' : 'Continue to secure checkout'} disabled={busy || !cart.length} onPress={pay} />
+          )}
           <Body style={{ textAlign: 'center', fontSize: 13 }}>
             You&apos;ll pay on the Goodwookie store&apos;s secure checkout, then come right back here. Every order is reviewed by hand before it&apos;s printed.
           </Body>
@@ -107,7 +149,13 @@ export default function Checkout() {
         </View>
         <Body style={{ fontSize: 14 }}>The options you see depend on your phone. You&apos;ll enter your shipping address on the next screen.</Body>
       </View>
-      {failed ? (
+      {failed === 'unavailable' ? (
+        <Alert title="Something in your cart has changed">
+          <Body>
+            One of the designs or product options in your cart isn&apos;t available any more. Designs are kept for 7 days. Remove it and try again.
+          </Body>
+        </Alert>
+      ) : failed ? (
         <Alert title="Checkout didn't open">
           <Body>Check your connection and try again. Your cart is still here.</Body>
         </Alert>

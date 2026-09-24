@@ -7,7 +7,7 @@ sticker or poster. It is the mobile version of
 and shares that page's generator, limits and store.
 
 - Product rules: [`docs/app-spec.md`](docs/app-spec.md)
-- Backend endpoints the Wix site needs: [`docs/backend-api.md`](docs/backend-api.md)
+- Backend API the app uses: [`docs/backend-api.md`](docs/backend-api.md)
 - Privacy policy: [`docs/privacy-policy.md`](docs/privacy-policy.md)
 - Screen designs: the Design Your Pet App canvas (linked from the spec)
 
@@ -26,12 +26,15 @@ rolling 24 hours, one design at a time, text checks, and a checkout that
 returns straight to the confirmation screen. Type "Skywalker" as the design
 text to see the text rejection.
 
-To use the real website backend once the endpoints in `docs/backend-api.md`
-exist:
+To use the live goodwookie.com backend, create `.env.local` (git ignores it):
 
 ```sh
-EXPO_PUBLIC_API_BASE_URL=https://www.goodwookie.com npx expo start
+EXPO_PUBLIC_API_BASE_URL=https://www.goodwookie.com
+EXPO_PUBLIC_DESIGN_APP_KEY=<the DESIGN_APP_KEY secret from Wix>
 ```
+
+For EAS builds, set the same two as EAS environment variables. Details are in
+`docs/backend-api.md`.
 
 ## Checks
 
@@ -54,7 +57,7 @@ npm run lint
 | `src/api/` | Backend contract, HTTP client and mock |
 | `src/state/AppState.tsx` | Device ID, current photo and style, cart, orders |
 | `assets/images/` | Style samples, brand logos and Printful mockups |
-| `wix-backend/` | Velo code for the goodwookie.com endpoints the app calls |
+| `wix-backend/` | An earlier draft of the Wix backend, superseded by the live API in `docs/backend-api.md` |
 
 ## Building for the stores
 
