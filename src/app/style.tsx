@@ -1,16 +1,16 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../api';
-import { Alert, Body, Button, H1, Screen, StepHeader } from '../components/ui';
+import { Alert, Body, Button, Checkbox, H1, Screen, StepHeader } from '../components/ui';
 import { MAX_TEXT_LENGTH, STYLES, styleById } from '../data/catalog';
 import { problemRoute } from '../lib/errorRoute';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 export default function Style() {
-  const { styleId, setStyleId, text, setText, startDesign } = useAppState();
+  const { styleId, setStyleId, text, setText, includePeople, setIncludePeople, peopleConsent, setPeopleConsent, startDesign } = useAppState();
   const [busy, setBusy] = useState(false);
   const [textError, setTextError] = useState<string | null>(null);
   const [inProgress, setInProgress] = useState(false);
@@ -30,6 +30,9 @@ export default function Style() {
         setTextError("That text can't be printed. Please avoid profanity and trademarked names or titles. Try your pet's own name instead.");
       } else if (e instanceof ApiError && e.code === 'DESIGN_IN_PROGRESS') {
         setInProgress(true);
+      } else if (e instanceof ApiError && e.code === 'PEOPLE_CONSENT_NEEDED') {
+        setIncludePeople(true);
+        setPeopleConsent(false);
       } else if (e instanceof ApiError && e.code === 'TEXT_CHECKER_DOWN') {
         setCheckerBusy(true);
       } else {
@@ -44,7 +47,7 @@ export default function Style() {
     <Screen
       footer={
         <>
-          <Button title={busy ? 'Starting…' : 'Generate design'} disabled={busy || !!textError} onPress={generate} />
+          <Button title={busy ? 'Starting…' : 'Generate design'} disabled={busy || !!textError || (includePeople && !peopleConsent)} onPress={generate} />
           {textError ? (
             <Button
               variant="link"
@@ -122,6 +125,31 @@ export default function Style() {
         </View>
       )}
 
+      <View style={styles.people}>
+        <View style={styles.peopleRow}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text nativeID="peopleLabel" style={styles.fieldLabel}>
+              Include the people in my photo
+            </Text>
+            <Body style={{ fontSize: 14 }}>{includePeople ? 'Everyone in the photo is drawn together with your pets.' : 'Off: only your pets are drawn.'}</Body>
+          </View>
+          <Switch
+            accessibilityLabelledBy="peopleLabel"
+            accessibilityLabel="Include the people in my photo"
+            value={includePeople}
+            onValueChange={setIncludePeople}
+            trackColor={{ false: colors.agedCream, true: colors.navy }}
+            thumbColor={colors.white}
+            ios_backgroundColor={colors.agedCream}
+          />
+        </View>
+        {includePeople ? (
+          <Checkbox checked={peopleConsent} onChange={setPeopleConsent}>
+            <Text style={styles.consentText}>Everyone in this photo is 18 or older and agreed to be in the design.</Text>
+          </Checkbox>
+        ) : null}
+      </View>
+
       {inProgress ? (
         <Alert title="A design is already being made">
           <Body>Only one design can be made at a time. Wait for it to finish, then try again.</Body>
@@ -137,6 +165,9 @@ export default function Style() {
 }
 
 const styles = StyleSheet.create({
+  people: { gap: 12, padding: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.agedCream },
+  peopleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  consentText: { fontFamily: fonts.body, fontSize: 15, color: colors.navy },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   card: { width: '47%', flexGrow: 1, padding: 8, borderRadius: 18, borderWidth: 3, backgroundColor: colors.card },
   sample: { width: '100%', height: 124, borderRadius: 10, backgroundColor: colors.paper },

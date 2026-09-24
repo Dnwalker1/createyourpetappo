@@ -9,6 +9,13 @@ import { problemRoute } from '../lib/errorRoute';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
+// What the photo-rejected screen says for each refusal reason from the backend.
+const REJECT_REASONS: Record<string, string> = {
+  child: 'It looks like there may be a child in it. Photos with children can\'t be used, even with the people switch on.',
+  famous: 'It looks like a well-known person may be in it. We can only draw you, your people and your pets.',
+  too_many: 'There are more than 6 people and pets in it. Try a photo with fewer.',
+};
+
 const pawSunset = require('../../assets/images/brand/paw-sunset-icon.webp');
 const POLL_MS = 2000;
 const EXPECTED_MS = 60_000;
@@ -33,7 +40,8 @@ export default function Generating() {
           // The photo is checked while the design is made, so a photo with no
           // pet, or one that isn't accepted, ends up here too.
           stopped = true;
-          router.replace(problemRoute(new ApiError(design.problem ?? 'DESIGN_FAILED')) as never);
+          const reason = design.rejectReason ? REJECT_REASONS[design.rejectReason] : undefined;
+          router.replace(problemRoute(new ApiError(design.problem ?? 'DESIGN_FAILED', reason)) as never);
           return;
         }
         if (design.status !== 'processing') {

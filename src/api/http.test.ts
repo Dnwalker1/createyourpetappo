@@ -90,6 +90,21 @@ describe('http api', () => {
     expect((await api().listDesigns(DEVICE))[0].styleId).toBe('sticker');
   });
 
+  it('sends includePeople with consent, and reads why a photo was refused', async () => {
+    const calls = fakeFetch([
+      { body: { ok: true, designId: 'd1', style: 'Travel Poster' } },
+      { body: { ok: true, designId: 'd2', style: 'Travel Stamp' } },
+      { body: { ok: true, designId: 'd1', status: 'photo_rejected', reason: 'child', style: 'Travel Poster', includePeople: true } },
+      { body: { ok: false, code: 'people_consent_needed', message: 'Consent needed' } },
+    ]);
+    await api().createDesign(DEVICE, { photoId: 'f', styleId: 'poster', includePeople: true });
+    expect(body(calls[0].init)).toEqual({ fileId: 'f', style: 'poster', includePeople: true, peopleConsent: true });
+    await api().createDesign(DEVICE, { photoId: 'f', styleId: 'stamp', includePeople: false });
+    expect(body(calls[1].init)).toEqual({ fileId: 'f', style: 'stamp' });
+    expect(await api().getDesign(DEVICE, 'd1')).toMatchObject({ status: 'rejected', problem: 'PHOTO_REJECTED', rejectReason: 'child' });
+    await expect(api().createDesign(DEVICE, { photoId: 'f', styleId: 'stamp' })).rejects.toMatchObject({ code: 'PEOPLE_CONSENT_NEEDED' });
+  });
+
   it('expands a bundle into checkout items with the backend size names', async () => {
     const calls = fakeFetch([{ body: { ok: true, checkoutId: 'co1', checkoutUrl: 'https://www.goodwookie.com/checkout?x' } }]);
     const res = await api().createCheckout(DEVICE, [

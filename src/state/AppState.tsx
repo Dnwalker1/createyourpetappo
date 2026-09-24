@@ -14,12 +14,19 @@ type AppState = {
   photo: PhotoInput | null;
   styleId: StyleId;
   text: string;
+  /** Draw the people in the photo too. Needs peopleConsent. Resets with a new photo. */
+  includePeople: boolean;
+  /** "Everyone in this photo is 18 or older and agreed to be in the design." */
+  peopleConsent: boolean;
   /** The design shown on the result, product and bundle screens. */
   activeDesign: Design | null;
   cart: CartItem[];
   setPhoto: (photo: PhotoInput | null) => void;
   setStyleId: (id: StyleId) => void;
   setText: (text: string) => void;
+  /** Turning it off also unticks the consent. */
+  setIncludePeople: (on: boolean) => void;
+  setPeopleConsent: (on: boolean) => void;
   setActiveDesign: (design: Design | null) => void;
   /** Uploads the chosen photo (once). Throws ApiError UPLOAD_FAILED. */
   uploadPhoto: () => Promise<void>;
@@ -49,6 +56,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [photoId, setPhotoId] = useState<string | null>(null);
   const [styleId, setStyleId] = useState<StyleId>('stamp');
   const [text, setText] = useState('');
+  const [includePeople, setIncludePeopleState] = useState(false);
+  const [peopleConsent, setPeopleConsent] = useState(false);
   const [activeDesign, setActiveDesign] = useState<Design | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
 
@@ -72,6 +81,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const setPhoto = useCallback((p: PhotoInput | null) => {
     setPhotoState(p);
     setPhotoId(null);
+    setIncludePeopleState(false);
+    setPeopleConsent(false);
   }, []);
 
   const ensureUploaded = useCallback(async () => {
@@ -82,13 +93,23 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return id;
   }, [deviceId, photo, photoId]);
 
+  const setIncludePeople = useCallback((on: boolean) => {
+    setIncludePeopleState(on);
+    if (!on) setPeopleConsent(false);
+  }, []);
+
   const startDesign = useCallback(async () => {
     if (!deviceId) throw new Error('No device ID');
     const id = await ensureUploaded();
     const trimmed = text.trim();
-    const { designId } = await api.createDesign(deviceId, { photoId: id, styleId, text: trimmed || undefined });
+    const { designId } = await api.createDesign(deviceId, {
+      photoId: id,
+      styleId,
+      text: trimmed || undefined,
+      includePeople: includePeople && peopleConsent,
+    });
     return designId;
-  }, [deviceId, ensureUploaded, styleId, text]);
+  }, [deviceId, ensureUploaded, styleId, text, includePeople, peopleConsent]);
 
   const value = useMemo<AppState>(
     () => ({
@@ -97,11 +118,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       photo,
       styleId,
       text,
+      includePeople,
+      peopleConsent,
       activeDesign,
       cart,
       setPhoto,
       setStyleId,
       setText,
+      setIncludePeople,
+      setPeopleConsent,
       setActiveDesign,
       uploadPhoto: async () => {
         await ensureUploaded();
@@ -113,7 +138,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeFromCart: (id) => setCart((c) => c.filter((i) => i.id !== id)),
       clearCart: () => setCart([]),
     }),
-    [ready, deviceId, photo, styleId, text, activeDesign, cart, setPhoto, ensureUploaded, startDesign],
+    [ready, deviceId, photo, styleId, text, includePeople, peopleConsent, activeDesign, cart, setPhoto, setIncludePeople, ensureUploaded, startDesign],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

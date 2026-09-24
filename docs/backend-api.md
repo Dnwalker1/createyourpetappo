@@ -41,9 +41,9 @@ statuses: 400 `device_missing`, 401 `bad_app_key`, 500 `server_error`.
 | GET `/products` | – | products, styles, `maxTextLength: 18` |
 | GET `/allowance` | – | `{ allowance }` |
 | POST `/uploadUrl` | `{ mimeType }` (jpeg/png/heic/heif/webp) | `{ uploadUrl }`. The limits are checked first. |
-| POST `/designs` | `{ fileId, style, text? }` | `{ designId, style }` |
+| POST `/designs` | `{ fileId, style, text?, includePeople?, peopleConsent? }` | `{ designId, style }` |
 | GET `/designs` | – | `{ designs:[{designId,style,text,previewUrl,createdAt,expiresAt}], inProgressDesignId, allowance }` |
-| GET `/designs/<designId>` | – | `{ designId, status, style, text, previewUrl, allowance? }` |
+| GET `/designs/<designId>` | – | `{ designId, status, reason, includePeople, style, text, previewUrl, allowance? }` |
 | POST `/mockups` | `{ designId, productKey, color?, size }` | `{ taskKey }` (the app doesn't use this; it draws its own previews) |
 | GET `/mockups/<taskKey>` | – | `{ status, mockupUrl, mockupUrls }` |
 | POST `/checkout` | `{ items:[{designId,productKey,color?,size,quantity}] }` | `{ checkoutId, checkoutUrl, summary }` |
@@ -85,7 +85,7 @@ The generating screen polls `GET /designs/<id>` every 2 s.
 | `working` | processing | Generating |
 | `ready` | ready | Result |
 | `no_pet` | rejected | No pet found |
-| `photo_rejected` | rejected | Photo not accepted |
+| `photo_rejected` | rejected | Photo not accepted, with a line for `reason`: `child`, `famous`, `too_many` (over 6 people and pets) or `content` (general wording) |
 | `checker_down` | failed | Photo check unavailable. The photo is kept, so "Try again" reuses it. |
 | `failed` | failed | Design failed |
 
@@ -103,8 +103,21 @@ None of the failures count toward the 5; every attempt counts toward the 12.
 | `text_checker_down` | `TEXT_CHECKER_DOWN`: "Try again in a minute" on the style screen |
 | `upload_not_ready` | Retried silently |
 | `bad_photo`, `bad_photo_type`, `upload_unavailable` | `UPLOAD_FAILED`: Upload failed |
+| `people_consent_needed` | `PEOPLE_CONSENT_NEEDED`: the style screen shows the consent box again |
 | `design_unavailable`, `bad_choice`, `bad_product` | `CART_ITEM_UNAVAILABLE`: notice on the checkout screen |
 | anything else | `NETWORK`: generic "try again" |
+
+## People in the photo
+
+- The style screen has a switch, "Include the people in my photo", off by
+  default. When it's on, a checkbox appears: "Everyone in this photo is 18 or
+  older and agreed to be in the design." Generate stays disabled until it's
+  ticked, and turning the switch off unticks it. Choosing a new photo resets
+  both.
+- The app sends `includePeople: true, peopleConsent: true` only when both are
+  on; otherwise it sends neither.
+- The server refuses any photo that appears to include a child, switch on or
+  off, so the upload screen's "no children" promise still holds.
 
 ## Checkout
 

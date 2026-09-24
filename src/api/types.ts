@@ -18,6 +18,7 @@ export type ErrorCode =
   | 'DESIGN_IN_PROGRESS'
   | 'TEXT_CHECKER_DOWN'
   | 'CART_ITEM_UNAVAILABLE'
+  | 'PEOPLE_CONSENT_NEEDED'
   | 'NETWORK';
 
 export class ApiError extends Error {
@@ -44,6 +45,8 @@ export type Design = {
   status: DesignStatus;
   /** Why a failed or rejected design didn't come out: NO_PET, PHOTO_REJECTED, CHECKER_UNAVAILABLE or DESIGN_FAILED. */
   problem?: ErrorCode;
+  /** Why a photo was refused: child, famous, too_many or content. */
+  rejectReason?: string;
   createdAt: number;
   /** Watermarked preview. The print-quality file never reaches the app. */
   preview: ImageSourcePropType | null;
@@ -85,7 +88,11 @@ export interface DesignYourPetApi {
    * TRIES_LIMIT, STUDIO_BUSY or DESIGN_IN_PROGRESS. The photo is checked while
    * the design is made, so no-pet and rejected photos arrive on the design.
    */
-  createDesign(deviceId: string, input: { photoId: string; styleId: StyleId; text?: string }): Promise<{ designId: string }>;
+  createDesign(
+    deviceId: string,
+    /** includePeople is only sent true when the customer also ticked the adults-and-consent box. */
+    input: { photoId: string; styleId: StyleId; text?: string; includePeople?: boolean },
+  ): Promise<{ designId: string }>;
   getDesign(deviceId: string, designId: string): Promise<Design>;
   /** Designs from the last 7 days, newest first. */
   listDesigns(deviceId: string): Promise<Design[]>;

@@ -22,6 +22,7 @@ const CODE_MAP: Record<string, ErrorCode> = {
   design_unavailable: 'CART_ITEM_UNAVAILABLE',
   bad_choice: 'CART_ITEM_UNAVAILABLE',
   bad_product: 'CART_ITEM_UNAVAILABLE',
+  people_consent_needed: 'PEOPLE_CONSENT_NEEDED',
 };
 
 // Design status -> the app's status, plus the problem screen for the ones that
@@ -53,6 +54,7 @@ function toDesign(d: Json): Design {
     text: (d.text as string | undefined) || undefined,
     status: mapped.status,
     problem: mapped.problem,
+    rejectReason: (d.reason as string | undefined) || undefined,
     createdAt: time(d.createdAt) ?? Date.now(),
     preview: d.previewUrl ? { uri: String(d.previewUrl) } : null,
   };
@@ -162,7 +164,12 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
     },
 
     async createDesign(deviceId, input) {
-      const body = { fileId: input.photoId, style: input.styleId, ...(input.text ? { text: input.text } : {}) };
+      const body = {
+        fileId: input.photoId,
+        style: input.styleId,
+        ...(input.text ? { text: input.text } : {}),
+        ...(input.includePeople ? { includePeople: true, peopleConsent: true } : {}),
+      };
       // Wix may still be processing the photo: wait and ask again. Uses nothing.
       for (let attempt = 0; ; attempt++) {
         try {
