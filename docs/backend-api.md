@@ -110,8 +110,11 @@ None of the failures count toward the 5; every attempt counts toward the 12.
 
 1. The app keeps its own cart and sends it as items. A bundle becomes four
    items with quantity 1; Wix applies the automatic 10% bundle discount.
-2. The app opens `checkoutUrl` with `WebBrowser.openBrowserAsync`. The
-   customer pays on the Wix checkout.
+2. The app opens `checkoutUrl`: on iOS in the in-app Safari sheet
+   (`WebBrowser.openBrowserAsync`), on Android in the phone's own browser
+   (`Linking.openURL`), because some browsers' custom tabs (Edge) keep asking
+   to "open the external app" while the Wix checkout loads. The customer pays
+   on the Wix checkout.
 3. The app asks `GET /checkout/<checkoutId>`, a few times over about 5 s,
    when the browser closes (iOS) or when the app comes back to the
    foreground (Android, where `openBrowserAsync` returns as soon as the

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { api, ApiError, CheckoutLine, MOCK_CHECKOUT_URL } from '../api';
 import { Alert, Body, Button, Card, Label, Screen, TitleBar } from '../components/ui';
 import { describeChoice } from '../data/catalog';
@@ -76,9 +76,17 @@ export default function Checkout() {
         return;
       }
       setPendingId(checkoutId);
-      const result = await WebBrowser.openBrowserAsync(checkoutUrl);
-      // iOS resolves when the sheet closes; Android as soon as it opens.
-      if (result.type !== 'opened') await confirm(checkoutId);
+      if (Platform.OS === 'android') {
+        // Android: the phone's own browser, not an in-app custom tab. Some
+        // browsers' custom tabs (Edge) keep asking to "open the external app"
+        // while the Wix checkout loads. The order is checked when the customer
+        // comes back to the app (AppState listener above).
+        await Linking.openURL(checkoutUrl);
+        return;
+      }
+      // iOS: the in-app Safari sheet; this resolves when it closes.
+      await WebBrowser.openBrowserAsync(checkoutUrl);
+      await confirm(checkoutId);
     } catch (e) {
       setFailed(e instanceof ApiError && e.code === 'CART_ITEM_UNAVAILABLE' ? 'unavailable' : 'network');
     } finally {
@@ -99,7 +107,9 @@ export default function Checkout() {
             <Button title={busy ? 'Opening checkout…' : 'Continue to secure checkout'} disabled={busy || !cart.length} onPress={pay} />
           )}
           <Body style={{ textAlign: 'center', fontSize: 13 }}>
-            You&apos;ll pay on the Goodwookie store&apos;s secure checkout, then come right back here. Every order is reviewed by hand before it&apos;s printed.
+            {pendingId
+              ? 'Finished paying? Come back to this app and your order shows up here. Your cart is kept until the payment goes through.'
+              : 'You\'ll pay on the Goodwookie store\'s secure checkout in your browser, then come back to this app. Every order is reviewed by hand before it\'s printed.'}
           </Body>
         </>
       }
