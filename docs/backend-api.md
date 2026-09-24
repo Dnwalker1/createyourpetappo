@@ -68,6 +68,14 @@ in dollars.
 3. POST `/designs` with `fileId`. On `upload_not_ready`, the client waits
    `retryAfterMs` and asks again (up to 15 times). That uses nothing.
 
+## Styles in answers
+
+Requests send the style key (`stamp`, `poster`, `evening`, `sticker`), but the
+live backend answers with the display name (`"style": "Evening Portrait"`).
+The client accepts the key, the display name or the website key
+(`eveningPortrait`) through `styleIdFrom` in `src/data/catalog.ts`. An
+unreadable style used to crash the result and Your designs screens.
+
 ## Design status
 
 The generating screen polls `GET /designs/<id>` every 2 s.

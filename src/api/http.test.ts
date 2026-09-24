@@ -78,6 +78,18 @@ describe('http api', () => {
     expect(await api().getDesign(DEVICE, 'c')).toMatchObject({ status: 'ready', preview: { uri: 'https://static.wixstatic.com/p.png' } });
   });
 
+  it('reads the style whether the backend sends the display name, the key or the website key', async () => {
+    // The live backend answers with the display name, which used to crash the result screen.
+    fakeFetch([
+      { body: { ok: true, designId: 'a', status: 'ready', style: 'Evening Portrait', previewUrl: 'https://p' } },
+      { body: { ok: true, designId: 'b', status: 'ready', style: 'travelPoster', previewUrl: 'https://p' } },
+      { body: { ok: true, designs: [{ designId: 'c', style: 'Adventure Sticker', previewUrl: 'https://p', createdAt: '2026-09-24T20:25:51Z' }] } },
+    ]);
+    expect((await api().getDesign(DEVICE, 'a')).styleId).toBe('evening');
+    expect((await api().getDesign(DEVICE, 'b')).styleId).toBe('poster');
+    expect((await api().listDesigns(DEVICE))[0].styleId).toBe('sticker');
+  });
+
   it('expands a bundle into checkout items with the backend size names', async () => {
     const calls = fakeFetch([{ body: { ok: true, checkoutId: 'co1', checkoutUrl: 'https://www.goodwookie.com/checkout?x' } }]);
     const res = await api().createCheckout(DEVICE, [

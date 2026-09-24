@@ -1,4 +1,4 @@
-import type { ProductChoice } from '../data/catalog';
+import { styleIdFrom, type ProductChoice } from '../data/catalog';
 import { ApiError, CheckoutLine, Design, DesignYourPetApi, ErrorCode, Limits, Order, OrderStatus } from './types';
 
 // Talks to the goodwookie.com Wix backend (https://www.goodwookie.com/_functions).
@@ -48,7 +48,8 @@ function toDesign(d: Json): Design {
   const mapped = STATUS_MAP[String(d.status ?? 'ready')] ?? { status: 'failed', problem: 'DESIGN_FAILED' };
   return {
     id: String(d.designId),
-    styleId: d.style as Design['styleId'],
+    // The backend sends the display name ("Evening Portrait"), not the key.
+    styleId: styleIdFrom(d.style) ?? styleIdFrom(d.styleKey) ?? 'stamp',
     text: (d.text as string | undefined) || undefined,
     status: mapped.status,
     problem: mapped.problem,

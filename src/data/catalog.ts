@@ -8,6 +8,8 @@ export type StyleId = 'stamp' | 'poster' | 'evening' | 'sticker';
 export type DesignStyle = {
   id: StyleId;
   name: string;
+  /** The website's key for the style (PetDesigns.styleChoice). */
+  siteKey: string;
   sample: ImageSourcePropType;
   allowsText: boolean;
 };
@@ -15,11 +17,20 @@ export type DesignStyle = {
 export const MAX_TEXT_LENGTH = 18;
 
 export const STYLES: DesignStyle[] = [
-  { id: 'stamp', name: 'Travel Stamp', sample: require('../../assets/images/styles/travel-stamp.png'), allowsText: true },
-  { id: 'poster', name: 'Travel Poster', sample: require('../../assets/images/styles/travel-poster.png'), allowsText: true },
-  { id: 'evening', name: 'Evening Portrait', sample: require('../../assets/images/styles/evening-portrait.png'), allowsText: false },
-  { id: 'sticker', name: 'Adventure Sticker', sample: require('../../assets/images/styles/adventure-sticker.png'), allowsText: false },
+  { id: 'stamp', name: 'Travel Stamp', siteKey: 'travelStamp', sample: require('../../assets/images/styles/travel-stamp.png'), allowsText: true },
+  { id: 'poster', name: 'Travel Poster', siteKey: 'travelPoster', sample: require('../../assets/images/styles/travel-poster.png'), allowsText: true },
+  { id: 'evening', name: 'Evening Portrait', siteKey: 'eveningPortrait', sample: require('../../assets/images/styles/evening-portrait.png'), allowsText: false },
+  { id: 'sticker', name: 'Adventure Sticker', siteKey: 'adventureSticker', sample: require('../../assets/images/styles/adventure-sticker.png'), allowsText: false },
 ];
+
+/**
+ * The app's style id for whatever the backend sent: the app key ("evening"),
+ * the display name ("Evening Portrait") or the website key ("eveningPortrait").
+ */
+export function styleIdFrom(value: unknown): StyleId | undefined {
+  const v = String(value ?? '').trim().toLowerCase();
+  return STYLES.find((s) => s.id === v || s.name.toLowerCase() === v || s.siteKey.toLowerCase() === v)?.id;
+}
 
 export function styleById(id: StyleId): DesignStyle {
   const style = STYLES.find((s) => s.id === id);
