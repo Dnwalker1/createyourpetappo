@@ -57,7 +57,6 @@ npm run lint
 | `src/api/` | Backend contract, HTTP client and mock |
 | `src/state/AppState.tsx` | Device ID, current photo and style, cart, orders |
 | `assets/images/` | Style samples, brand logos and Printful mockups |
-| `wix-backend/` | An earlier draft of the Wix backend, superseded by the live API in `docs/backend-api.md` |
 
 ## Building for the stores
 
