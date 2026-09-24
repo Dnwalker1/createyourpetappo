@@ -28,13 +28,15 @@ export const SITE_URL = 'https://www.goodwookie.com';
 const RETURN_FUNCTION = `${SITE_URL}/_functions/dyp/return`;
 const MAX_ORDER_LOOKUPS = 20;
 
+// Elevated on every call, never once at module load: the site found that
+// elevating at load time can quietly return incomplete results.
 const elevated = {
-  getProduct: auth.elevate(productsV3.getProduct),
-  createCheckout: auth.elevate(checkout.createCheckout),
-  createRedirectSession: auth.elevate(redirects.createRedirectSession),
-  getOrder: auth.elevate(orders.getOrder),
-  searchOrders: auth.elevate(orders.searchOrders),
-  listFulfillments: auth.elevate(orderFulfillments.listFulfillmentsForSingleOrder),
+  getProduct: (...args) => auth.elevate(productsV3.getProduct)(...args),
+  createCheckout: (...args) => auth.elevate(checkout.createCheckout)(...args),
+  createRedirectSession: (...args) => auth.elevate(redirects.createRedirectSession)(...args),
+  getOrder: (...args) => auth.elevate(orders.getOrder)(...args),
+  searchOrders: (...args) => auth.elevate(orders.searchOrders)(...args),
+  listFulfillments: (...args) => auth.elevate(orderFulfillments.listFulfillmentsForSingleOrder)(...args),
 };
 
 // Tee and hoodie have one variant per colour and size (54 and 30 of them), so

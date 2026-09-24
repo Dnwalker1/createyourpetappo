@@ -36,7 +36,20 @@ Pet page.
 
    If the site already has a `wixEcom_onOrderCreated`, call `linkOrder` from
    inside it.
-6. Publish, then test from the app with
+6. Add the app's photo clean-up to the nightly job that already runs
+   `deleteOldUnorderedDesigns(7)` (in the site's `backend/jobs.config` job
+   function):
+
+   ```js
+   import { deleteOldAppUploads } from 'backend/dyp/designs';
+   // after deleteOldUnorderedDesigns(7):
+   await deleteOldAppUploads(7);
+   ```
+
+   It permanently deletes app-uploaded photos older than 7 days that never
+   became a design. Photos that did become designs are left to
+   `deleteOldUnorderedDesigns`.
+7. Publish, then test from the app with
    `EXPO_PUBLIC_API_BASE_URL=https://www.goodwookie.com npx expo start`.
    Before publishing you can test against the test site: the URLs take
    `?rc=test-site`.

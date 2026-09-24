@@ -36,9 +36,13 @@ export class DypError extends Error {
   }
 }
 
+// Elevated on every call, never once at module load: the site found that
+// elevating at load time can quietly return incomplete results.
 const elevated = {
-  generateFileUploadUrl: auth.elevate(files.generateFileUploadUrl),
-  getFileDescriptor: auth.elevate(files.getFileDescriptor),
+  generateFileUploadUrl: (...args) => auth.elevate(files.generateFileUploadUrl)(...args),
+  getFileDescriptor: (...args) => auth.elevate(files.getFileDescriptor)(...args),
+  searchFiles: (...args) => auth.elevate(files.searchFiles)(...args),
+  bulkDeleteFiles: (...args) => auth.elevate(files.bulkDeleteFiles)(...args),
 };
 
 const createdMs = (item) => new Date(item._createdDate).getTime();
@@ -85,6 +89,36 @@ async function resolvePhoto(deviceId, photoId) {
     await new Promise((r) => setTimeout(r, 1000));
   }
   throw new DypError('UPLOAD_FAILED', 500, 'The photo is still processing. Try again.');
+}
+
+// Nightly: photos uploaded from the app that never became a design (the
+// customer stopped before Generate, or was over a limit). They have no
+// PetDesigns record, so the site's deleteOldUnorderedDesigns never sees them.
+// Photos that did become designs are left to that clean-up. Permanent delete,
+// not the trash, to match the privacy policy.
+const APP_UPLOAD_NAME = /^dyp-[0-9a-f]{16}-/;
+export async function deleteOldAppUploads(days = KEEP_DESIGNS_DAYS) {
+  const before = Date.now() - days * DAY_MS;
+  let cursor;
+  let deleted = 0;
+  for (let page = 0; page < 20; page++) {
+    const res = await elevated.searchFiles({ search: 'dyp-', paging: { limit: 100, cursor } });
+    const old = (res.files ?? []).filter(
+      (f) => APP_UPLOAD_NAME.test(f.displayName ?? '') && f.url && new Date(f._createdDate).getTime() < before,
+    );
+    if (old.length) {
+      const used = await wixData.query(COLLECTION).hasSome('originalPhotoUrl', old.map((f) => f.url)).limit(1000).find(DATA);
+      const usedUrls = new Set(used.items.map((d) => d.originalPhotoUrl));
+      const orphans = old.filter((f) => !usedUrls.has(f.url)).map((f) => f._id);
+      if (orphans.length) {
+        await elevated.bulkDeleteFiles(orphans, { permanent: true });
+        deleted += orphans.length;
+      }
+    }
+    cursor = res.nextCursor?.cursors?.next ?? (typeof res.nextCursor === 'string' ? res.nextCursor : null);
+    if (!cursor) break;
+  }
+  return deleted;
 }
 
 // ---------------------------------------------------------------------------
