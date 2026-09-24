@@ -39,6 +39,3 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-
-# Leftover create-expo-app starter, not part of the app
-/goodwookie/
