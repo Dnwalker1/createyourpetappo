@@ -7,7 +7,7 @@ import { colors } from '../theme';
 // Positions are fractions of the square Printful flat mockups.
 const PLACEMENT = {
   tee: { top: 0.21, size: 0.29 },
-  hoodie: { top: 0.38, size: 0.27 },
+  hoodie: { top: 0.31, size: 0.27 },
 } as const;
 
 export function ProductPreview({ choice, design, size = 220 }: { choice: ProductChoice; design: ImageSourcePropType | null; size?: number }) {

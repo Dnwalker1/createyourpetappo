@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageViewer } from '../components/ImageViewer';
 import { ColorPicker, SizePicker } from '../components/Pickers';
 import { ProductPreview } from '../components/ProductPreview';
 import { Body, Button, Screen, TitleBar } from '../components/ui';
@@ -22,6 +23,7 @@ export default function Product() {
   const [choices, setChoices] = useState<Record<ProductId, ProductChoice>>(DEFAULT_CHOICES);
   const choice = choices[current];
   const product = PRODUCTS[current];
+  const [viewing, setViewing] = useState(false);
   const setChoice = (c: ProductChoice) => setChoices((all) => ({ ...all, [current]: c }));
 
   function add() {
@@ -50,9 +52,16 @@ export default function Product() {
           );
         })}
       </View>
-      <View style={styles.preview}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Enlarge your design"
+        disabled={!activeDesign?.preview}
+        onPress={() => setViewing(true)}
+        style={styles.preview}
+      >
         <ProductPreview choice={choice} design={activeDesign?.preview ?? null} size={220} />
-      </View>
+      </Pressable>
+      <ImageViewer source={activeDesign?.preview ?? null} visible={viewing} onClose={() => setViewing(false)} label="Your design" />
       {choice.product === 'tee' || choice.product === 'hoodie' ? (
         <View style={{ gap: 8 }}>
           <Text style={styles.label}>Color: {choice.color}</Text>
