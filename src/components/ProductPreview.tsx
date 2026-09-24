@@ -4,17 +4,24 @@ import { colorFor, PRODUCTS, ProductChoice } from '../data/catalog';
 import { colors } from '../theme';
 
 // Places the watermarked design on the product, like the canvas previews.
-// Positions are fractions of the square Printful flat mockups.
+// Positions are fractions of the square Printful flat mockups: center chest,
+// between the neckline and the pocket.
 const PLACEMENT = {
   tee: { top: 0.21, size: 0.29 },
-  hoodie: { top: 0.31, size: 0.27 },
+  hoodie: { top: 0.33, size: 0.27 },
 } as const;
+
+// The Bone hoodie photo shows the whole hood, so the body sits lower and
+// smaller in the frame than the other colors.
+const COLOR_PLACEMENT: Record<string, { top: number; size: number }> = {
+  'hoodie:Bone': { top: 0.37, size: 0.24 },
+};
 
 export function ProductPreview({ choice, design, size = 220 }: { choice: ProductChoice; design: ImageSourcePropType | null; size?: number }) {
   const name = PRODUCTS[choice.product].name;
   if (choice.product === 'tee' || choice.product === 'hoodie') {
     const color = colorFor(choice.product, choice.color);
-    const p = PLACEMENT[choice.product];
+    const p = COLOR_PLACEMENT[`${choice.product}:${choice.color}`] ?? PLACEMENT[choice.product];
     const d = size * p.size;
     return (
       <View style={{ width: size, height: size }} accessibilityLabel={`Your design on a ${color.name} ${name.toLowerCase()}`}>

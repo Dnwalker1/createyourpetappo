@@ -2,25 +2,14 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Screen, StepHeader } from '../components/ui';
+import { BundleCard } from '../components/BundleCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { ProductPreview } from '../components/ProductPreview';
-import { BUNDLE_DISCOUNT, DEFAULT_CHOICES, PRODUCT_ORDER, PRODUCTS, priceRange, styleById } from '../data/catalog';
-import { bundleItemsCents } from '../lib/cart';
-import { discountCents, formatMoney, formatRange } from '../lib/money';
+import { DEFAULT_CHOICES, PRODUCT_ORDER, PRODUCTS, priceRange, styleById } from '../data/catalog';
+import { formatRange } from '../lib/money';
 import { useLimits } from '../lib/useLimits';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
-
-// Cheapest bundle: every piece at its lowest price.
-function cheapestBundleCents(): number {
-  const items = bundleItemsCents({
-    tee: { product: 'tee', color: 'White', size: 'S' },
-    hoodie: { product: 'hoodie', color: 'Bone', size: 'S' },
-    sticker: { product: 'sticker', size: '3x3' },
-    poster: { product: 'poster', size: '12x12' },
-  });
-  return items - discountCents(items, BUNDLE_DISCOUNT);
-}
 
 export default function Result() {
   const { activeDesign, setPhoto } = useAppState();
@@ -77,16 +66,7 @@ export default function Result() {
           </Pressable>
         ))}
       </View>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/bundle')} style={styles.bundle}>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={styles.bundleTitle}>Buy them all · 10% off</Text>
-          <Text style={styles.bundleSub}>Tee, hoodie, sticker and poster</Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.bundleSub}>from</Text>
-          <Text style={styles.bundlePrice}>{formatMoney(cheapestBundleCents())}</Text>
-        </View>
-      </Pressable>
+      <BundleCard />
     </Screen>
   );
 }
@@ -108,8 +88,4 @@ const styles = StyleSheet.create({
   },
   productName: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 17, color: colors.navy },
   productPrice: { fontFamily: fonts.body, fontSize: 16, color: colors.slate },
-  bundle: { minHeight: 64, padding: 14, borderRadius: 14, backgroundColor: colors.navy, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bundleTitle: { fontFamily: fonts.display, fontSize: 18, color: colors.cream },
-  bundleSub: { fontFamily: fonts.body, fontSize: 14, color: colors.agedCream },
-  bundlePrice: { fontFamily: fonts.display, fontSize: 20, color: colors.gold },
 });

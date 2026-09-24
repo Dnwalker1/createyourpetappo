@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { BundleCard } from '../components/BundleCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { ColorPicker, SizePicker } from '../components/Pickers';
 import { ProductPreview } from '../components/ProductPreview';
@@ -76,6 +77,7 @@ export default function Product() {
         <SizePicker choice={choice} onChange={setChoice} />
       </View>
       <Body style={{ fontSize: 14 }}>{product.description} Free shipping. Printed on demand; allow a few days plus shipping.</Body>
+      <BundleCard />
     </Screen>
   );
 }
