@@ -175,7 +175,140 @@ Designs that aren't ordered are deleted automatically after a few days.
 - The customer's pet is always the subject of the artwork. Chewy appears only
   in brand assets and sample designs.
 
+## Privacy and data
+
+Privacy policy URL (both stores and in the app):
+https://www.goodwookie.com/terms-and-conditions
+The policy is published on the Terms & Conditions page. What it commits the app
+to:
+
+- **No accounts.** The app stores a random device ID, not linked to a name. It
+  is used to show My Designs and to apply the design limits. Reinstalling the
+  app creates a new ID, and earlier designs no longer appear.
+- **Two versions of every design.** A print-quality file used only for
+  production, and a watermarked preview. The app only ever receives and shows
+  the watermarked preview; the print file is never sent to the device.
+- **My Designs shows designs from the last 7 days.**
+- **Third parties:**
+  - Google Gemini API receives the photo, any text, and the generated artwork,
+    to create the design and run safety checks.
+  - Printful receives the watermarked preview (for product mockups) and, on
+    order, the print file, name, shipping address and contact details.
+  - Wix hosts the data and runs the store and checkout.
+  - Payment providers (card processors, PayPal, Apple Pay, Google Pay) take
+    payment. The app never sees card numbers.
+- **Safety checks:** photo checked for inappropriate content and for an animal
+  before any artwork is made; text checked the same way; finished designs
+  checked again. Flagged designs may be reviewed by hand before printing.
+- **Deletion:** photos that fail the check or have no animal are deleted
+  straight away. Unordered designs and their photos are deleted after
+  [X] days (to be set in the policy).
+- **Not used for** marketing, advertising or training AI models. Nothing is sold.
+- **Children:** not directed at children under 13.
+- **People in photos** are left out of the artwork.
+
+### Consent before sending a photo to AI
+
+Apple's App Review Guidelines (5.1.2) require the app to clearly disclose when
+personal data is shared with a third-party AI service and to get the user's
+explicit permission first. Before the first upload, the app must say that the
+photo is sent to Google's Gemini AI to create the design and run safety checks,
+link to the privacy policy, and get the customer's agreement. The existing
+"I own this photo and there are no children in it" checkbox on the upload screen
+is a natural place for this.
+
+### Store privacy disclosures (draft from the policy)
+
+Use this when filling in Apple's App Privacy section and Google Play's Data
+safety form. Confirm each answer against the final build.
+
+| Data | Collected | Linked to identity | Purpose |
+|---|---|---|---|
+| Photos (pet photo you upload) | Yes | No, until you order | App functionality |
+| Other user content (text on the design) | Yes | No, until you order | App functionality |
+| Device ID | Yes | No | App functionality (My Designs, design limits) |
+| Name, email, phone (optional), shipping address | Yes, at checkout (Wix) | Yes | Order fulfilment |
+| Purchase history | Yes | Yes | Order fulfilment |
+| Payment info | Handled by payment providers | – | Payment |
+| Used for tracking or advertising | No | – | – |
+| Data sold | No | – | – |
+
+## Store listing
+
+Screenshots and the feature graphic are designed on the canvas (App Store and
+Google Play rows). Export them at 2x:
+
+- App Store screenshots: 1290 × 2796
+- Google Play screenshots: 1080 × 2160 (Play doesn't accept anything taller
+  than 2:1)
+- Google Play feature graphic: 1024 × 500
+
+Screenshots must match the finished app. Check them against the real screens
+before submitting. If the app supports iPad, Apple also needs iPad screenshots.
+
+### Both stores
+
+**App name** (29 / 30): Design Your Pet by Goodwookie
+
+**Description** (896 / 4000; also the Google Play full description):
+
+> Put your best friend on a shirt.
+>
+> Upload a photo of your pet, pick a style, and Goodwookie turns it into
+> original artwork printed on a soft tee, a pullover hoodie, a kiss-cut sticker
+> or a matte poster.
+>
+> Four styles: Travel Stamp, Travel Poster, Evening Portrait and Adventure
+> Sticker. Try all four on the same photo and decide afterward. Add up to 18
+> characters of text to the Travel Stamp or Travel Poster.
+>
+> Works for any animal: dogs, cats, horses, and the goat you swore you weren't
+> going to name. Two or three pets in one photo works too.
+>
+> Five free designs every 24 hours. No account, no card, and nothing gets
+> printed until you order it.
+>
+> Buy them all: get the tee, hoodie, sticker and poster with the same design and
+> save 10%.
+>
+> Every order is reviewed by hand before it's printed. Printed on demand and
+> shipped free.
+>
+> Goodwookie Productions is a small business run by one person and a dog.
+
+### App Store only
+
+**Subtitle** (24 / 30): Your pet as art on a tee
+
+**Promotional text** (139 / 170; can change without a new review):
+Turn one photo of your pet into original artwork for a tee, hoodie, sticker or
+poster. Five free designs every 24 hours, no account needed.
+
+**Keywords** (99 / 100; comma separated, no spaces):
+`pet portrait,dog shirt,cat shirt,custom pet,pet art,dog gift,cat gift,pet sticker,pet poster,hoodie`
+
+### Google Play only
+
+**Short description** (71 / 80):
+Turn a photo of your pet into art for a tee, hoodie, sticker or poster.
+
+### Details
+
+| Field | Value |
+|---|---|
+| Category | Shopping |
+| Support email | info@goodwookie.com |
+| Website | goodwookie.com |
+| Privacy policy URL | https://www.goodwookie.com/terms-and-conditions |
+| Age rating | From each store's questionnaire |
+
 ## Open questions
 
-None at the moment. The limits, counting rules, unlock times and discount type
-were confirmed against `petDesigns.js`.
+- **My Designs retention:** the privacy policy says My Designs shows the last
+  7 days, but the app screens say "Everything you made in the last 24 hours".
+  One of them needs to change.
+- **Placeholders in the privacy policy:** effective date, contact email
+  (info@goodwookie.com elsewhere), the number of days before unordered designs
+  are deleted, and the mailing address.
+- **AI consent:** the upload screen needs the Gemini disclosure and agreement
+  described under "Consent before sending a photo to AI".
