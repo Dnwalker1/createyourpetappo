@@ -54,6 +54,8 @@ export type Design = {
 
 export type Limits = {
   available: number;
+  /** Successful designs allowed in the rolling 24 hours (5 unless raised on the server). */
+  limit: number;
   nextDesignAt: number | null;
   blockedBy: LimitBlock | null;
   unlocksAt: number | null;

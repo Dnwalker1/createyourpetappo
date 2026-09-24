@@ -75,7 +75,7 @@ function toLimits(allowance: Json | undefined, inProgressDesignId: unknown): Lim
     blockedBy = 'tries';
     unlocksAt = time(a.tryUnlockAt);
   }
-  return { available: designsLeft, nextDesignAt: time(a.designUnlockAt), blockedBy, unlocksAt };
+  return { available: designsLeft, limit: Number(a.designsLimit ?? 5), nextDesignAt: time(a.designUnlockAt), blockedBy, unlocksAt };
 }
 
 // Order stage names aren't fixed in the contract, so match on the word.

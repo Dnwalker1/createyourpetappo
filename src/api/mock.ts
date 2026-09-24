@@ -1,5 +1,5 @@
 import { STYLES, StyleId } from '../data/catalog';
-import { DAY_MS, DesignRecord, summarizeLimits } from '../lib/limits';
+import { DAY_MS, DesignRecord, MAX_GOOD_DESIGNS, summarizeLimits } from '../lib/limits';
 import { ApiError, CheckoutLine, Design, DesignYourPetApi, Limits, Order } from './types';
 
 // An in-memory backend that follows the same rules as the website, so the app
@@ -78,7 +78,7 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
 
     async getLimits(): Promise<Limits> {
       const s = summarizeLimits(records(), now());
-      return { available: s.available, nextDesignAt: s.nextDesignAt, blockedBy: s.blockedBy, unlocksAt: s.unlocksAt };
+      return { available: s.available, limit: MAX_GOOD_DESIGNS, nextDesignAt: s.nextDesignAt, blockedBy: s.blockedBy, unlocksAt: s.unlocksAt };
     },
 
     async createCheckout(_deviceId, lines: CheckoutLine[]) {

@@ -25,11 +25,11 @@ afterEach(() => jest.useRealTimers());
 
 describe('http api', () => {
   it('sends the device and app key headers to /_functions', async () => {
-    const calls = fakeFetch([{ body: { ok: true, designs: [], inProgressDesignId: null, allowance: { designsLeft: 3, triesLeft: 9, designUnlockAt: '2026-09-24T20:14:00Z' } } }]);
+    const calls = fakeFetch([{ body: { ok: true, designs: [], inProgressDesignId: null, allowance: { designsLeft: 3, designsLimit: 50, triesLeft: 9, designUnlockAt: '2026-09-24T20:14:00Z' } } }]);
     const limits = await api().getLimits(DEVICE);
     expect(calls[0].url).toBe('https://www.goodwookie.com/_functions/designs');
     expect(headers(calls[0].init)).toMatchObject({ 'X-Device-Id': DEVICE, 'X-App-Key': 'test-key' });
-    expect(limits).toEqual({ available: 3, nextDesignAt: Date.parse('2026-09-24T20:14:00Z'), blockedBy: null, unlocksAt: null });
+    expect(limits).toEqual({ available: 3, limit: 50, nextDesignAt: Date.parse('2026-09-24T20:14:00Z'), blockedBy: null, unlocksAt: null });
   });
 
   it('turns limits and a design in progress into blocks', async () => {
