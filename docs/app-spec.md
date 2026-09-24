@@ -27,7 +27,7 @@ https://claude.ai/artifact/LCuV9ETQ3znW6MzhWTWgJn
 | 8 | Cart | `Cart.dc.html` | Shows the discount once Wix applies it. |
 | 9 | Review and pay | `Checkout.dc.html` | Hands off to Wix checkout. |
 | 10 | Order confirmed | `Confirmation.dc.html` | Shown when the customer returns from Wix checkout. |
-| – | Your designs | `Gallery.dc.html` | Designs made in the last 24 hours; tapping one does not use a generation. Shows "N of 5 designs available · next one unlocks at [time]". |
+| – | Your designs | `Gallery.dc.html` | Designs made in the last 7 days; tapping one does not use a generation. Shows "N of 5 designs available · next one unlocks at [time]". |
 | – | My orders | `Orders.dc.html` | Status: In review, Printing, Shipped, Delivered; tracking once shipped. |
 
 "Try another style" reuses the same photo. The customer does not upload again.
@@ -162,7 +162,7 @@ Show each screen when its error happens, not from a button.
 
 ## Data retention
 
-Designs that aren't ordered are deleted automatically after a few days.
+Designs that aren't ordered are deleted automatically after 7 days.
 
 ## Brand
 
@@ -179,8 +179,8 @@ Designs that aren't ordered are deleted automatically after a few days.
 
 Privacy policy URL (both stores and in the app):
 https://www.goodwookie.com/terms-and-conditions
-The policy is published on the Terms & Conditions page. What it commits the app
-to:
+The policy is published on the Terms & Conditions page; the full text, effective
+September 23, 2026, is in `docs/privacy-policy.md`. What it commits the app to:
 
 - **No accounts.** The app stores a random device ID, not linked to a name. It
   is used to show My Designs and to apply the design limits. Reinstalling the
@@ -188,7 +188,8 @@ to:
 - **Two versions of every design.** A print-quality file used only for
   production, and a watermarked preview. The app only ever receives and shows
   the watermarked preview; the print file is never sent to the device.
-- **My Designs shows designs from the last 7 days.**
+- **My Designs shows designs from the last 7 days.** The 24-hour window applies
+  only to the design limits, never to how long designs are kept or shown.
 - **Third parties:**
   - Google Gemini API receives the photo, any text, and the generated artwork,
     to create the design and run safety checks.
@@ -201,8 +202,7 @@ to:
   before any artwork is made; text checked the same way; finished designs
   checked again. Flagged designs may be reviewed by hand before printing.
 - **Deletion:** photos that fail the check or have no animal are deleted
-  straight away. Unordered designs and their photos are deleted after
-  [X] days (to be set in the policy).
+  straight away. Unordered designs and their photos are deleted after 7 days.
 - **Not used for** marketing, advertising or training AI models. Nothing is sold.
 - **Children:** not directed at children under 13.
 - **People in photos** are left out of the artwork.
@@ -211,11 +211,12 @@ to:
 
 Apple's App Review Guidelines (5.1.2) require the app to clearly disclose when
 personal data is shared with a third-party AI service and to get the user's
-explicit permission first. Before the first upload, the app must say that the
-photo is sent to Google's Gemini AI to create the design and run safety checks,
-link to the privacy policy, and get the customer's agreement. The existing
-"I own this photo and there are no children in it" checkbox on the upload screen
-is a natural place for this.
+explicit permission first. The upload screen (`Upload.dc.html`) has two checkboxes, both required before
+Continue is enabled:
+
+1. "I own this photo and there are no children in it."
+2. "I agree that my photo, and any text I add, is sent to Google's Gemini AI to
+   create my design and run safety checks." with a link to the privacy policy.
 
 ### Store privacy disclosures (draft from the policy)
 
@@ -302,13 +303,13 @@ Turn a photo of your pet into art for a tee, hoodie, sticker or poster.
 | Privacy policy URL | https://www.goodwookie.com/terms-and-conditions |
 | Age rating | From each store's questionnaire |
 
+## Business details
+
+Goodwookie Productions LLC
+11519 Kingston Pike, Ste 2293
+Farragut, TN 37934
+info@goodwookie.com
+
 ## Open questions
 
-- **My Designs retention:** the privacy policy says My Designs shows the last
-  7 days, but the app screens say "Everything you made in the last 24 hours".
-  One of them needs to change.
-- **Placeholders in the privacy policy:** effective date, contact email
-  (info@goodwookie.com elsewhere), the number of days before unordered designs
-  are deleted, and the mailing address.
-- **AI consent:** the upload screen needs the Gemini disclosure and agreement
-  described under "Consent before sending a photo to AI".
+None at the moment.
