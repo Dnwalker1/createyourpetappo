@@ -58,6 +58,9 @@ npm run lint
 
 ## Building for the stores
 
+The project is linked to EAS as `@goodwookies-team/goodwookie`
+(project ID `d6df67c0-9a83-4bd4-9185-d0e9f026ac7f`, in `app.json`).
+
 Use EAS Build: `npx eas-cli@latest build --platform all`. The bundle ID and
 package name are `com.goodwookie.designyourpet`. The listing copy and
 screenshots are in the spec and on the canvas.

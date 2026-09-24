@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Design Your Pet",
-    "slug": "design-your-pet",
+    "slug": "goodwookie",
     "scheme": "designyourpet",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -54,7 +54,12 @@
     },
     "extra": {
       "privacyPolicyUrl": "https://www.goodwookie.com/terms-and-conditions",
-      "supportEmail": "info@goodwookie.com"
-    }
+      "supportEmail": "info@goodwookie.com",
+      "router": {},
+      "eas": {
+        "projectId": "d6df67c0-9a83-4bd4-9185-d0e9f026ac7f"
+      }
+    },
+    "owner": "goodwookies-team"
   }
 }
