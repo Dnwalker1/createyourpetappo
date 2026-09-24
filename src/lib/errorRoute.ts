@@ -15,7 +15,9 @@ export function problemRoute(error: unknown): string {
     case 'NO_PET':
       return '/problem/no-pet';
     case 'PHOTO_REJECTED':
-      return `/problem/photo-rejected?reason=${encodeURIComponent(error.message)}`;
+      return error.message && error.message !== error.code
+        ? `/problem/photo-rejected?reason=${encodeURIComponent(error.message)}`
+        : '/problem/photo-rejected';
     case 'DESIGN_FAILED':
       return '/problem/design-failed';
     case 'LIMIT_REACHED':

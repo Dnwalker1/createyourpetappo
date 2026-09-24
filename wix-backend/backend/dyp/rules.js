@@ -24,8 +24,9 @@ export const STYLE_TO_SITE = {
 export const SITE_TO_STYLE = Object.fromEntries(Object.entries(STYLE_TO_SITE).map(([app, site]) => [site, app]));
 export const STYLES_WITH_TEXT = ['stamp', 'poster'];
 
-// PetDesigns.status -> the app's DesignStatus.
-// 'unclean' (couldn't be cleaned up for print) is shown as failed.
+// PetDesigns.status (set by the site's aiDesign.web.js) -> the app's DesignStatus.
+// 'unclean': both tries came out dirty. 'error': the studio hit a snag, or the
+// photo checker was down.
 const STATUS_TO_APP = {
   pending: 'processing',
   ready: 'ready',
@@ -33,7 +34,7 @@ const STATUS_TO_APP = {
   ordered: 'ordered',
   blocked: 'rejected',
   unclean: 'failed',
-  failed: 'failed',
+  error: 'failed',
 };
 export const GOOD_APP_STATUSES = ['ready', 'flagged', 'ordered'];
 export const GOOD_SITE_STATUSES = ['ready', 'flagged', 'ordered'];
@@ -42,6 +43,37 @@ export function toAppStatus(siteStatus, createdAt, now) {
   const status = STATUS_TO_APP[siteStatus] ?? 'failed';
   if (status === 'processing' && now - createdAt > STALE_PENDING_MS) return 'failed';
   return status;
+}
+
+// Why a design didn't come out, as the app's error code. The site checks the
+// photo inside the background generation, so no-pet and rejected photos show
+// up here, on the design, rather than as an error from POST /designs.
+export const CHECKER_BUSY_NOTE = 'The photo checker is busy';
+export function problemFor(appStatus, siteStatus, note) {
+  if (appStatus !== 'failed' && appStatus !== 'rejected') return null;
+  const text = String(note ?? '');
+  if (siteStatus === 'blocked' && text === 'No animal in the photo.') return 'NO_PET';
+  if (siteStatus === 'blocked' && text.startsWith('Photo rejected')) return 'PHOTO_REJECTED';
+  if (siteStatus === 'error' && text.startsWith(CHECKER_BUSY_NOTE)) return 'CHECKER_UNAVAILABLE';
+  return 'DESIGN_FAILED';
+}
+
+// startPetDesign's { ok: false, step } -> the app's error code.
+export function startFailureCode(step) {
+  switch (step) {
+    case 'text':
+      return 'TEXT_REJECTED';
+    case 'text checker':
+      return 'CHECKER_UNAVAILABLE';
+    case 'daily limit':
+      return 'LIMIT_REACHED';
+    case 'attempt ceiling':
+      return 'TRIES_LIMIT';
+    case 'site busy':
+      return 'STUDIO_BUSY';
+    default:
+      return 'DESIGN_FAILED';
+  }
 }
 
 const DEVICE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

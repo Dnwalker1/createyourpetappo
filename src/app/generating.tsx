@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { api, ApiError } from '../api';
 import { Body, Button, H1, Pill, Screen, StepHeader } from '../components/ui';
 import { styleById } from '../data/catalog';
+import { problemRoute } from '../lib/errorRoute';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
@@ -29,8 +30,10 @@ export default function Generating() {
         const design = await api.getDesign(deviceId, designId);
         if (stopped) return;
         if (design.status === 'failed' || design.status === 'rejected') {
+          // The photo is checked while the design is made, so a photo with no
+          // pet, or one that isn't accepted, ends up here too.
           stopped = true;
-          router.replace('/problem/design-failed');
+          router.replace(problemRoute(new ApiError(design.problem ?? 'DESIGN_FAILED')) as never);
           return;
         }
         if (design.status !== 'processing') {

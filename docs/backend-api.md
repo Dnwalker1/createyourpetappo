@@ -2,9 +2,9 @@
 
 The app talks to the goodwookie.com Wix site through a small set of
 [HTTP functions](https://dev.wix.com/docs/velo/apis/wix-http-functions/introduction).
-They should wrap the logic the website already uses (`aiDesign.web.js`,
-`petDesigns.js`), so the app and the site share one generator, one set of
-limits and one store.
+They call the logic the website already uses (`startPetDesign` in
+`aiDesign.web.js`, and the `PetDesigns` collection), so the app and the site
+share one generator, one set of limits and one store.
 
 The app's side of this contract is `src/api/types.ts` (interface) and
 `src/api/http.ts` (client). Until these endpoints exist, the app runs on the
@@ -34,11 +34,11 @@ Any non-2xx response has this body:
 | `code` | HTTP | When | App screen |
 |---|---|---|---|
 | `UPLOAD_FAILED` | 400 / 500 | Photo missing, unreadable or failed to store. No design record is created. | Upload failed |
-| `CHECKER_UNAVAILABLE` | 503 | The photo checker is temporarily down. Uses nothing. | Photo check unavailable |
-| `NO_PET` | 422 | No animal found. The photo is deleted. Uses a try, not a design. | No pet found |
-| `PHOTO_REJECTED` | 422 | Photo fails the content check. `message` is shown to the customer (for example "It looks like there may be a child in it."). Uses a try, not a design. | Photo not accepted |
+| `CHECKER_UNAVAILABLE` | 503, or on the design | The text or photo checker is temporarily down. Uses nothing. | Photo check unavailable |
+| `NO_PET` | on the design | No animal found. The photo is deleted. Uses a try, not a design. | No pet found |
+| `PHOTO_REJECTED` | on the design | Photo fails the content check. Like the website, the app shows its general wording, not the checker's reason. Uses a try, not a design. | Photo not accepted |
 | `TEXT_REJECTED` | 422 | Text fails the check (profanity, protected names or titles). | Shown inline on the style screen |
-| `DESIGN_FAILED` | 422 | Generation failed after the silent retry, or couldn't be cleaned up for print. Uses a try, not a design. | Design failed |
+| `DESIGN_FAILED` | on the design | Generation failed after the silent retry, or couldn't be cleaned up for print. Uses a try, not a design. | Design failed |
 | `LIMIT_REACHED` | 429 | 5 successful designs in the rolling 24 hours. `unlocksAt` = oldest successful design + 24 h. | Limit reached |
 | `TRIES_LIMIT` | 429 | 12 attempts in the rolling 24 hours. `unlocksAt` = oldest attempt + 24 h. | 12 tries |
 | `STUDIO_BUSY` | 503 | Site-wide ceiling of 180 designs an hour. Uses nothing. | Studio busy |
@@ -82,11 +82,17 @@ In this order:
 1. Reject with `DESIGN_IN_PROGRESS` if the device has a design still being made
    (one in progress at a time).
 2. Check the limits (`LIMIT_REACHED`, `TRIES_LIMIT`, `STUDIO_BUSY`).
-3. Create the design record (this is what counts toward the 12).
-4. Check the text and the photo (`TEXT_REJECTED`, `CHECKER_UNAVAILABLE`,
-   `NO_PET`, `PHOTO_REJECTED`). Delete rejected and no-pet photos straight
-   away.
-5. Start generation and return immediately.
+3. Check the text (`TEXT_REJECTED`, or `CHECKER_UNAVAILABLE` if the text
+   checker is down). This happens before the record exists, so a refused name
+   uses nothing.
+4. Create the design record (this is what counts toward the 12) and start
+   generation in the background. Return immediately.
+
+Steps 2 to 4 are the website's own `startPetDesign` in `aiDesign.web.js`. The
+photo is checked **inside** the background generation, so `NO_PET`,
+`PHOTO_REJECTED` and a photo checker outage arrive on the design as its
+`problem` (next endpoint), not as an error from this call. Refused and no-pet
+photos are deleted straight away.
 
 ```json
 { "designId": "..." }
@@ -102,10 +108,15 @@ Generation runs in the background; the app polls the next endpoint.
   "style": "stamp",
   "text": "Biscuit",
   "status": "processing | ready | flagged | ordered | failed | rejected",
+  "problem": "null | NO_PET | PHOTO_REJECTED | CHECKER_UNAVAILABLE | DESIGN_FAILED",
   "createdAt": "2026-09-24T19:02:11Z",
   "previewUrl": "https://… watermarked preview only"
 }
 ```
+
+`problem` says which screen to show when the status is failed or rejected.
+When it is `CHECKER_UNAVAILABLE`, the backend removes the record, so the
+attempt doesn't count toward the 12 ("Nothing was used up").
 
 `previewUrl` is `null` until the design is ready. **Only the watermarked
 preview is ever returned.** The print-quality file stays on the server.
@@ -211,7 +222,15 @@ Never generate one in the app.
 
 The website's `PetDesigns.status` values map to the app like this:
 `pending` → processing, `ready` → ready, `flagged` → flagged,
-`ordered` → ordered, `blocked` → rejected, `unclean` and `failed` → failed.
+`ordered` → ordered, `blocked` → rejected, `unclean` and `error` → failed.
+
+| Site status and `moderationNote` | `problem` |
+|---|---|
+| `blocked`, "No animal in the photo." | `NO_PET` |
+| `blocked`, "Photo rejected: …" | `PHOTO_REJECTED` |
+| `blocked`, "Gemini returned no image." | `DESIGN_FAILED` |
+| `error`, "The photo checker is busy…" | `CHECKER_UNAVAILABLE` |
+| `unclean` (both tries came out dirty), other `error` | `DESIGN_FAILED` |
 A design still pending after 15 minutes is reported as failed so it can't
 block the device forever.
 

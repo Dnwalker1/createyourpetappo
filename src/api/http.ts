@@ -15,6 +15,7 @@ function toDesign(d: Json): Design {
     styleId: d.style as Design['styleId'],
     text: (d.text as string | undefined) ?? undefined,
     status: d.status as Design['status'],
+    problem: KNOWN_CODES.includes(d.problem as ErrorCode) ? (d.problem as ErrorCode) : undefined,
     createdAt: Date.parse(String(d.createdAt)),
     preview: d.previewUrl ? { uri: String(d.previewUrl) } : null,
   };

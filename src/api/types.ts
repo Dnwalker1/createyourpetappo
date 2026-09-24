@@ -36,6 +36,8 @@ export type Design = {
   styleId: StyleId;
   text?: string;
   status: DesignStatus;
+  /** Why a failed or rejected design didn't come out: NO_PET, PHOTO_REJECTED, CHECKER_UNAVAILABLE or DESIGN_FAILED. */
+  problem?: ErrorCode;
   createdAt: number;
   /** Watermarked preview. The print-quality file never reaches the app. */
   preview: ImageSourcePropType | null;

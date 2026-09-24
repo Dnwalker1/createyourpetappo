@@ -10,9 +10,8 @@ Pet page.
 |---|---|
 | `backend/http-functions.js` | The endpoints: `get_dyp`, `post_dyp`, `options_dyp` |
 | `backend/dyp/rules.js` | Limits, style and status mapping, product and variant IDs, input checks. No Wix imports, so it's unit-tested (`tests/rules.test.js`) |
-| `backend/dyp/designs.js` | Photo upload URLs, creating designs, limits, the design list |
+| `backend/dyp/designs.js` | Photo upload URLs, starting designs through the site's `startPetDesign`, limits, the design list |
 | `backend/dyp/store.js` | Wix checkout, the return into the app, orders |
-| `backend/dyp/site.js` | **The bridge to the site's generator. Needs wiring, see below.** |
 
 ## Install
 
@@ -20,12 +19,10 @@ Pet page.
 2. **Packages & Apps → npm**: make sure these are installed: `@wix/essentials`,
    `@wix/media`, `@wix/ecom`, `@wix/stores`, `@wix/redirects`.
 3. Under **Backend**, create a folder `dyp` and add `rules.js`,
-   `designs.js`, `store.js` and `site.js` with the contents of the files here.
+   `designs.js` and `store.js` with the contents of the files here.
 4. Add `http-functions.js` to **Backend**. If the site already has one, paste
    in the three `*_dyp` functions and the imports instead of replacing it.
-5. Wire `backend/dyp/site.js` to the site's existing checks and generator
-   (below).
-6. So paid orders are linked even if the customer never returns to the app,
+5. So paid orders are linked even if the customer never returns to the app,
    add this to `backend/events.js` (create it if it doesn't exist; add to it
    if it does):
 
@@ -39,26 +36,28 @@ Pet page.
 
    If the site already has a `wixEcom_onOrderCreated`, call `linkOrder` from
    inside it.
-7. Publish, then test from the app with
+6. Publish, then test from the app with
    `EXPO_PUBLIC_API_BASE_URL=https://www.goodwookie.com npx expo start`.
    Before publishing you can test against the test site: the URLs take
    `?rc=test-site`.
 
-## Wiring `site.js`
+## Using the site's generator
 
-The app has to use the website's own text check, photo check and generator,
-which live in `backend/aiDesign.web.js` and `backend/petDesigns.js` on the
-site. `site.js` has three functions to fill in with calls to those:
+Designs go through the website's own `startPetDesign` in
+`backend/aiDesign.web.js`, so the app gets exactly the same limits, text
+check, photo check, Gemini prompts, clean-up, watermark and self-check as the
+website. Nothing in `aiDesign.web.js` needs to change.
 
-- `checkText(text)` → `{ ok: true }` or `{ ok: false, message }`
-- `checkPhoto(photoUrl)` → `{ result: 'ok' | 'no-pet' | 'rejected' | 'unavailable', message? }`
-- `startGeneration(design)` starts the site's generator for a `PetDesigns`
-  item already saved as `pending`, and returns quickly. The generator sets the
-  final status and `previewArtUrl` / `generatedArtUrl`, as it does for the
-  website.
+What the app backend adds around it:
 
-Until they are wired, designs stop with "Photo check unavailable" and nothing
-is used up.
+- One design at a time per phone, and the unlock time for the limit screens.
+- The photo upload link (the website page uploads through its own upload
+  button).
+- Reading the result: the site checks the photo during generation, so
+  `blocked` / `error` / `unclean` records are turned into the right problem
+  screen (no pet, photo not accepted, checker down, design failed).
+- If the photo checker was down, the record is removed so the try isn't used
+  up. The website keeps those records, so they count toward its 12 tries.
 
 ## How it maps to the site
 

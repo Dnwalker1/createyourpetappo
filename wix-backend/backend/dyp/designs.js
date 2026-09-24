@@ -9,17 +9,18 @@ import crypto from 'crypto';
 import {
   DAY_MS,
   GOOD_SITE_STATUSES,
-  HOUR_MS,
   KEEP_DESIGNS_DAYS,
-  SITE_DESIGNS_PER_HOUR,
   SITE_TO_STYLE,
   STYLE_TO_SITE,
   cleanText,
   mediaUrl,
+  problemFor,
+  startFailureCode,
   summarizeLimits,
   toAppStatus,
 } from 'backend/dyp/rules';
-import { checkPhoto, checkText, startGeneration } from 'backend/dyp/site';
+// The website's own generator: same limits, text check, photo check and art.
+import { startPetDesign } from 'backend/aiDesign.web';
 
 export const COLLECTION = 'PetDesigns';
 const DATA = { suppressAuth: true };
@@ -38,7 +39,6 @@ export class DypError extends Error {
 const elevated = {
   generateFileUploadUrl: auth.elevate(files.generateFileUploadUrl),
   getFileDescriptor: auth.elevate(files.getFileDescriptor),
-  bulkDeleteFiles: auth.elevate(files.bulkDeleteFiles),
 };
 
 const createdMs = (item) => new Date(item._createdDate).getTime();
@@ -87,14 +87,6 @@ async function resolvePhoto(deviceId, photoId) {
   throw new DypError('UPLOAD_FAILED', 500, 'The photo is still processing. Try again.');
 }
 
-async function deletePhoto(fileIdOrUrl) {
-  try {
-    await elevated.bulkDeleteFiles([fileIdOrUrl], { permanent: true });
-  } catch (err) {
-    console.error('dyp: could not delete photo', err);
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Designs
 
@@ -107,6 +99,9 @@ export function toApiDesign(item, now = Date.now()) {
     style: SITE_TO_STYLE[item.styleChoice] ?? 'stamp',
     text: item.customText || null,
     status,
+    // Why it didn't come out (NO_PET, PHOTO_REJECTED, CHECKER_UNAVAILABLE,
+    // DESIGN_FAILED), or null.
+    problem: problemFor(status, item.status, item.moderationNote),
     createdAt: new Date(created).toISOString(),
     // Only the watermarked preview. generatedArtUrl (the print file) never leaves the server.
     previewUrl: good ? mediaUrl(item.previewArtUrl) : null,
@@ -145,12 +140,18 @@ export function limitsBody(summary) {
 export async function getDesign(deviceId, designId) {
   const item = typeof designId === 'string' && designId ? await wixData.get(COLLECTION, designId, DATA) : null;
   if (!item || item.visitorId !== deviceId) throw new DypError('DESIGN_FAILED', 404, 'Design not found.');
-  return toApiDesign(item);
+  const design = toApiDesign(item);
+  if (design.problem === 'CHECKER_UNAVAILABLE') {
+    // The checker being down isn't the customer's doing, and the app tells
+    // them nothing was used up, so this attempt doesn't count toward the 12.
+    await wixData.remove(COLLECTION, item._id, DATA).catch((err) => console.error('dyp: could not remove design', err));
+  }
+  return design;
 }
 
 export async function listDesigns(deviceId, now = Date.now()) {
   const items = await recentForDevice(deviceId, now - KEEP_DESIGNS_DAYS * DAY_MS);
-  return items.filter((i) => GOOD_SITE_STATUSES.includes(i.status)).map((i) => toApiDesign(i, now));
+  return items.filter((i) => GOOD_SITE_STATUSES.includes(i.status) && i.previewArtUrl).map((i) => toApiDesign(i, now));
 }
 
 // Designs this device may order: its own, and successful.
@@ -161,7 +162,11 @@ export async function orderableDesigns(deviceId, designIds) {
   return ok;
 }
 
-// POST /designs. Order of steps is in docs/backend-api.md.
+// POST /designs. Hands over to the website's startPetDesign, which checks
+// the limits and the text, creates the PetDesigns record and starts the
+// generation in the background. The photo check happens inside that
+// generation, so a photo with no pet or a refused photo shows up on the
+// design (GET /design -> problem), not as an error here.
 export async function createDesign(deviceId, { photoId, style, text }) {
   const styleChoice = STYLE_TO_SITE[style];
   if (!styleChoice) throw new DypError('DESIGN_FAILED', 400, 'Unknown style.');
@@ -172,74 +177,27 @@ export async function createDesign(deviceId, { photoId, style, text }) {
     throw new DypError('TEXT_REJECTED', 422, err.message);
   }
 
-  // 1–2. One design at a time, then the device limits, then the site ceiling.
-  const now = Date.now();
-  const limits = await getLimits(deviceId, now);
+  // One design at a time (the app's rule; the website page enforces it by
+  // disabling Generate). Checking the limits here as well gives the app the
+  // unlock time, which startPetDesign doesn't return.
+  const limits = await getLimits(deviceId);
   if (limits.blockedBy === 'in-progress') throw new DypError('DESIGN_IN_PROGRESS', 409);
   if (limits.blockedBy === 'designs') throw new DypError('LIMIT_REACHED', 429, null, new Date(limits.unlocksAt).toISOString());
   if (limits.blockedBy === 'tries') throw new DypError('TRIES_LIMIT', 429, null, new Date(limits.unlocksAt).toISOString());
-  const lastHour = await wixData.query(COLLECTION).gt('_createdDate', new Date(now - HOUR_MS)).count(DATA);
-  if (lastHour >= SITE_DESIGNS_PER_HOUR) throw new DypError('STUDIO_BUSY', 503);
 
   // The photo must exist before anything is used up.
   const photo = await resolvePhoto(deviceId, photoId);
 
-  // 3. The record. From here on this counts toward the 12 tries.
-  const design = await wixData.insert(
-    COLLECTION,
-    {
-      title: 'Design Your Pet app',
-      visitorId: deviceId,
-      styleChoice,
-      customText,
-      originalPhotoUrl: photo.url,
-      status: 'pending',
-    },
-    DATA,
-  );
-  const finish = (fields) => wixData.update(COLLECTION, { ...design, ...fields }, DATA);
-
-  // 4. Text, then photo.
-  if (customText) {
-    const verdict = await checkText(customText).catch((err) => {
-      console.error('dyp: text check failed', err);
-      return null;
-    });
-    if (!verdict) {
-      await wixData.remove(COLLECTION, design._id, DATA);
-      throw new DypError('CHECKER_UNAVAILABLE', 503);
-    }
-    if (!verdict.ok) {
-      await finish({ status: 'blocked', moderationNote: `Text: ${verdict.message ?? 'not allowed'}` });
-      throw new DypError('TEXT_REJECTED', 422, verdict.message);
-    }
+  const result = await startPetDesign(photo.url, styleChoice, deviceId, customText);
+  if (!result?.ok) {
+    const code = startFailureCode(result?.step);
+    console.warn(`dyp: startPetDesign refused (${result?.step}): ${result?.reason}`);
+    const status = { TEXT_REJECTED: 422, CHECKER_UNAVAILABLE: 503, LIMIT_REACHED: 429, TRIES_LIMIT: 429, STUDIO_BUSY: 503 }[code] ?? 500;
+    // The site's own wording for a refused name is fine to show; its limit
+    // wording says "today", which the app never does, so the app uses its own.
+    throw new DypError(code, status, code === 'TEXT_REJECTED' ? result.reason : null);
   }
-
-  const check = await checkPhoto(photo.url).catch((err) => {
-    console.error('dyp: photo check failed', err);
-    return { result: 'unavailable' };
-  });
-  if (check.result === 'unavailable') {
-    // Uses nothing: take the record back out.
-    await wixData.remove(COLLECTION, design._id, DATA);
-    throw new DypError('CHECKER_UNAVAILABLE', 503);
-  }
-  if (check.result === 'no-pet' || check.result === 'rejected') {
-    await deletePhoto(photo.id);
-    await finish({ status: 'blocked', originalPhotoUrl: '', moderationNote: check.result === 'no-pet' ? 'No animal in the photo.' : check.message ?? 'Photo rejected.' });
-    if (check.result === 'no-pet') throw new DypError('NO_PET', 422);
-    throw new DypError('PHOTO_REJECTED', 422, check.message);
-  }
-
-  // 5. Generate. The app polls GET /design.
-  try {
-    await startGeneration(design);
-  } catch (err) {
-    console.error('dyp: startGeneration failed', err);
-    await finish({ status: 'failed', moderationNote: String(err?.message ?? err) });
-    throw new DypError('DESIGN_FAILED', 500);
-  }
-  return { designId: design._id };
+  return { designId: result.designRecordId };
 }
 
 // Marks designs as ordered, the way the website links a design to its order.

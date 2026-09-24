@@ -8,6 +8,8 @@ import {
   mediaUrl,
   orderTitle,
   parseCheckoutLines,
+  problemFor,
+  startFailureCode,
   summarizeLimits,
   toAppOrderStatus,
   toAppStatus,
@@ -135,5 +137,29 @@ describe('orders and URLs', () => {
     expect(toCents('127.95')).toBe(12795);
     expect(mediaUrl('wix:image://v1/94607f_abc~mv2.png/x.png#originWidth=1')).toBe('https://static.wixstatic.com/media/94607f_abc~mv2.png');
     expect(mediaUrl('http://insecure')).toBeNull();
+  });
+});
+
+describe('the site generator', () => {
+  it('turns a design outcome into the right problem screen', () => {
+    expect(problemFor('rejected', 'blocked', 'No animal in the photo.')).toBe('NO_PET');
+    expect(problemFor('rejected', 'blocked', 'Photo rejected: unsuitable photo')).toBe('PHOTO_REJECTED');
+    expect(problemFor('rejected', 'blocked', 'Gemini returned no image.')).toBe('DESIGN_FAILED');
+    expect(problemFor('failed', 'error', 'The photo checker is busy — please try again in a minute.')).toBe('CHECKER_UNAVAILABLE');
+    expect(problemFor('failed', 'unclean', 'The banner didn\'t come out reading "BISCUIT".')).toBe('DESIGN_FAILED');
+    expect(problemFor('ready', 'ready', '')).toBeNull();
+  });
+
+  it('maps startPetDesign refusals', () => {
+    expect(startFailureCode('text')).toBe('TEXT_REJECTED');
+    expect(startFailureCode('text checker')).toBe('CHECKER_UNAVAILABLE');
+    expect(startFailureCode('daily limit')).toBe('LIMIT_REACHED');
+    expect(startFailureCode('attempt ceiling')).toBe('TRIES_LIMIT');
+    expect(startFailureCode('site busy')).toBe('STUDIO_BUSY');
+    expect(startFailureCode('starting the design')).toBe('DESIGN_FAILED');
+  });
+
+  it('knows the site statuses', () => {
+    expect(toAppStatus('error', NOW, NOW)).toBe('failed');
   });
 });
