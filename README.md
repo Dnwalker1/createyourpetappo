@@ -54,6 +54,7 @@ npm run lint
 | `src/api/` | Backend contract, HTTP client and mock |
 | `src/state/AppState.tsx` | Device ID, current photo and style, cart, orders |
 | `assets/images/` | Style samples, brand logos and Printful mockups |
+| `wix-backend/` | Velo code for the goodwookie.com endpoints the app calls |
 
 ## Building for the stores
 

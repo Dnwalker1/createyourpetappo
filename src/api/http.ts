@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { ApiError, CheckoutLine, Design, DesignYourPetApi, ErrorCode, Limits, Order } from './types';
 
 // Talks to the Wix http-functions described in docs/backend-api.md.
@@ -63,18 +62,25 @@ export function createHttpApi(baseUrl: string): DesignYourPetApi {
   const q = (params: Record<string, string>) => `?${new URLSearchParams(params).toString()}`;
 
   return {
+    // Two steps, because Wix HTTP functions only take 512 KB: the backend hands
+    // out a one-time upload URL, and the photo goes straight to Wix Media.
     async uploadPhoto(deviceId, photo) {
-      const form = new FormData();
-      form.append('deviceId', deviceId);
-      if (Platform.OS === 'web') {
+      const mimeType = photo.mimeType ?? 'image/jpeg';
+      const { uploadUrl, fileName } = await call('/photos', json({ deviceId, mimeType }), 'UPLOAD_FAILED');
+      try {
         const blob = await (await fetch(photo.uri)).blob();
-        form.append('photo', blob, photo.fileName ?? 'pet.jpg');
-      } else {
-        // React Native's FormData accepts a { uri, name, type } file part.
-        form.append('photo', { uri: photo.uri, name: photo.fileName ?? 'pet.jpg', type: photo.mimeType ?? 'image/jpeg' } as unknown as Blob);
+        const res = await fetch(`${String(uploadUrl)}?filename=${encodeURIComponent(String(fileName))}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': mimeType },
+          body: blob,
+        });
+        if (!res.ok) throw new Error(`Upload ${res.status}`);
+        const file = ((await res.json()) as { file?: { id?: string } }).file;
+        if (!file?.id) throw new Error('No file id');
+        return { photoId: file.id };
+      } catch {
+        throw new ApiError('UPLOAD_FAILED');
       }
-      const body = await call('/photos', { method: 'POST', body: form }, 'UPLOAD_FAILED');
-      return { photoId: String(body.photoId) };
     },
 
     async createDesign(deviceId, input) {

@@ -14,8 +14,8 @@ built-in mock in `src/api/mock.ts`, which follows the same rules.
 
 - All endpoints live under one Wix HTTP function prefix, `dyp`:
   `https://www.goodwookie.com/_functions/dyp/...`
-  In `backend/http-functions.js` that means exporting `get_dyp` and `post_dyp`
-  and routing on `request.path`.
+  In `backend/http-functions.js` that means exporting `get_dyp`, `post_dyp` and
+  `options_dyp` and routing on `request.path`.
 - The app sets `EXPO_PUBLIC_API_BASE_URL=https://www.goodwookie.com` to switch
   from the mock to these endpoints.
 - Every request carries `deviceId`, the random ID the app stores per install
@@ -51,12 +51,23 @@ time.
 
 ### `POST /_functions/dyp/photos`
 
-Multipart form: `deviceId`, `photo` (JPEG or PNG from the phone camera or
-library). Stores the photo. Creates no design record, so it uses nothing.
+Wix HTTP functions only accept 512 KB request bodies, so the photo doesn't go
+through them. This call returns a one-time Wix Media upload URL:
 
 ```json
-{ "photoId": "..." }
+{ "deviceId": "...", "mimeType": "image/jpeg" }
 ```
+
+```json
+{ "uploadUrl": "https://...", "fileName": "dyp-<device hash>-<random>.jpg" }
+```
+
+The app then sends the photo straight to Wix Media with
+`PUT <uploadUrl>?filename=<fileName>` (`Content-Type` set to the photo's type,
+the raw image as the body). Wix answers `{ "file": { "id": "...", ... } }`, and
+that file `id` is the `photoId` for the next call. File names start with a
+hash of the device, so a design can only use a photo uploaded from the same
+device. Creates no design record, so it uses nothing.
 
 Errors: `UPLOAD_FAILED`.
 
@@ -161,10 +172,15 @@ doesn't apply it and the app only displays it.
 
 The app opens `checkoutUrl` in a secure in-app browser. After payment, Wix
 must redirect to `returnUrl` with the order ID:
-`designyourpet://confirmation?orderId=…`. With Wix Headless this is the
-`thankYouPageUrl` callback of a redirect session; check the current Wix
-eCommerce docs for the exact call. If the customer closes checkout without
-paying, nothing happens and the app keeps the cart.
+`designyourpet://confirmation?orderId=…`. The backend does this with a Wix
+redirect session whose `thankYouPageUrl` and `postFlowUrl` point at
+`GET /_functions/dyp/return`, which finds the order, marks its designs as
+ordered and answers with a 302 into the app. If the customer closes checkout
+without paying, nothing happens and the app keeps the cart.
+
+The device ID and design IDs travel on the checkout as two custom fields,
+"Design Your Pet app device" and "Design Your Pet designs", so they show on
+the order in the dashboard too.
 
 ### `GET /_functions/dyp/orders?deviceId=…&ids=a,b,c`
 
@@ -190,6 +206,18 @@ Returns only orders placed with this `deviceId`:
 
 `number` is the real Wix order number, without the `#`; the app adds it.
 Never generate one in the app.
+
+## Status mapping
+
+The website's `PetDesigns.status` values map to the app like this:
+`pending` → processing, `ready` → ready, `flagged` → flagged,
+`ordered` → ordered, `blocked` → rejected, `unclean` and `failed` → failed.
+A design still pending after 15 minutes is reported as failed so it can't
+block the device forever.
+
+## Implementation
+
+The Velo code for these endpoints is in [`wix-backend/`](../wix-backend/README.md).
 
 ## Privacy
 
