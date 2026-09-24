@@ -53,6 +53,10 @@ All prices are Printful retail prices in USD. Shipping is free on everything.
 The tee and hoodie carry the Goodwookie script logo on the left sleeve
 (already on the Printful mockups).
 
+Tee description (from Printful): "The Unisex Staple T-Shirt feels soft and light
+with just the right amount of stretch." Don't call it heavyweight; the website's
+"soft, heavyweight tee" wording is out of date.
+
 ### Buy them all bundle
 
 - One tee, one hoodie, one sticker and one poster with the same design.
@@ -112,6 +116,7 @@ Never say "today" for the 5-design limit. Use "3 of 5 designs available" and
 | Photo fails the content check | No | Yes |
 | Upload fails (photo uploads before a design record exists) | No | No |
 | Photo checker unavailable | No | No |
+| Studio busy (site-wide 180 an hour) | No | No |
 
 ## Error states
 
@@ -127,7 +132,7 @@ Show each screen when its error happens, not from a button.
 | Design fails | `GenerateFailed.dc.html` | "This one didn't work out, so it won't count toward your 5 designs." |
 | 5 designs in 24 hours | `LimitReached.dc.html` | "Your next free design unlocks at [local time]." |
 | 12 attempts in 24 hours | `TriesLimit.dc.html` | "That's 12 tries today, which is the limit." Shows when the next try unlocks. |
-| Site-wide 180 designs an hour | `StudioBusy.dc.html` | "Our design studio is very busy right now." |
+| Site-wide 180 designs an hour | `StudioBusy.dc.html` | "Our design studio is very busy right now." Says "Nothing was used up." |
 
 ### Photo ground rules (from the website)
 
