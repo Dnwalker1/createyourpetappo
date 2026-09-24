@@ -16,6 +16,7 @@ export type ErrorCode =
   | 'TRIES_LIMIT'
   | 'STUDIO_BUSY'
   | 'DESIGN_IN_PROGRESS'
+  | 'CART_CONFLICT'
   | 'NETWORK';
 
 export class ApiError extends Error {

@@ -8,6 +8,11 @@ import {
   mediaUrl,
   orderTitle,
   parseCheckoutLines,
+  conflictingLines,
+  designForLine,
+  encodeLines,
+  orderStatusFromPrintful,
+  printfulExternalId,
   problemFor,
   startFailureCode,
   summarizeLimits,
@@ -116,7 +121,7 @@ describe('apparel variants', () => {
 
 describe('orders and URLs', () => {
   it('maps order status', () => {
-    expect(toAppOrderStatus({ paymentStatus: 'PAID', fulfillmentStatus: 'NOT_FULFILLED' }, false)).toBe('printing');
+    expect(toAppOrderStatus({ paymentStatus: 'PAID', fulfillmentStatus: 'NOT_FULFILLED' }, false)).toBe('in-review');
     expect(toAppOrderStatus({ paymentStatus: 'PAID', fulfillmentStatus: 'FULFILLED' }, false)).toBe('shipped');
     expect(toAppOrderStatus({ paymentStatus: 'PENDING', fulfillmentStatus: 'NOT_FULFILLED' }, false)).toBe('in-review');
   });
@@ -161,5 +166,42 @@ describe('the site generator', () => {
 
   it('knows the site statuses', () => {
     expect(toAppStatus('error', NOW, NOW)).toBe('failed');
+  });
+});
+
+describe('which design goes on which order line', () => {
+  const entries = [
+    { designId: 'dA', productId: 'tee', variantId: 'white-l' },
+    { designId: 'dB', productId: 'poster', variantId: '16' },
+    { designId: 'dA', productId: 'poster', variantId: '12' },
+  ];
+  const line = (id, product, variant) => ({ _id: id, catalogReference: { catalogItemId: product, options: { variantId: variant } } });
+
+  it('matches order lines by product and variant, whatever order Wix puts them in', () => {
+    const lines = [line('l1', 'poster', '12'), line('l2', 'tee', 'white-l'), line('l3', 'poster', '16')];
+    const encoded = encodeLines(entries);
+    expect(designForLine(encoded, lines, lines[0])).toBe('dA');
+    expect(designForLine(encoded, lines, lines[1])).toBe('dA');
+    expect(designForLine(encoded, lines, lines[2])).toBe('dB');
+    expect(designForLine(encoded, lines, line('lx', 'hoodie', 'bone-l'))).toBeNull();
+  });
+
+  it('refuses two designs on the same variant, which Wix would merge', () => {
+    expect(conflictingLines(entries)).toBe(false);
+    expect(conflictingLines([...entries, { designId: 'dC', productId: 'tee', variantId: 'white-l' }])).toBe(true);
+    expect(conflictingLines([...entries, { designId: 'dA', productId: 'tee', variantId: 'white-l' }])).toBe(false);
+  });
+});
+
+describe('Printful', () => {
+  it('builds the same external_id as printfulOrders.js', () => {
+    expect(printfulExternalId({ number: 10042, _id: 'x' }, { _id: 'abcdef12-3456-7890' })).toBe('10042-abcdef12-345');
+  });
+
+  it('reports the least advanced line', () => {
+    expect(orderStatusFromPrintful(['draft', 'fulfilled'])).toBe('in-review');
+    expect(orderStatusFromPrintful(['inprocess', 'fulfilled'])).toBe('printing');
+    expect(orderStatusFromPrintful(['fulfilled'])).toBe('shipped');
+    expect(orderStatusFromPrintful([])).toBeNull();
   });
 });

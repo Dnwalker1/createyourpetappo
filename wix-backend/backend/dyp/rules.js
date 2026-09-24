@@ -244,11 +244,30 @@ export function withQuery(url, params) {
 // ---------------------------------------------------------------------------
 // Orders
 
-// Wix order -> the app's OrderStatus.
+// Fallback when Printful has nothing to say: shipped once Wix has a
+// fulfillment, otherwise still waiting for the hand review.
 export function toAppOrderStatus(order, hasTracking) {
   if (order.fulfillmentStatus === 'FULFILLED' || order.fulfillmentStatus === 'PARTIALLY_FULFILLED' || hasTracking) return 'shipped';
-  if (order.paymentStatus === 'PAID') return 'printing';
   return 'in-review';
+}
+
+// The Printful external_id the site's printfulOrders.js gives one order line.
+// Must stay identical to the code there.
+export function printfulExternalId(order, lineItem) {
+  return `${order.number || String(order._id).slice(0, 12)}-${String(lineItem._id || lineItem.id || '').slice(0, 12)}`
+    .replace(/[^A-Za-z0-9_-]/g, '')
+    .slice(0, 32);
+}
+
+// Printful order statuses -> the app's. Orders start as drafts that wait for
+// a hand review ("confirm: false"), which is the app's "in review".
+const PRINTFUL_PROGRESS = { draft: 0, onhold: 0, failed: 0, canceled: 0, pending: 1, inprocess: 1, partial: 2, fulfilled: 2 };
+const APP_ORDER_STATUS = ['in-review', 'printing', 'shipped'];
+// The least advanced line decides; null if Printful had nothing.
+export function orderStatusFromPrintful(statuses) {
+  const known = statuses.filter((st) => st in PRINTFUL_PROGRESS);
+  if (!known.length) return null;
+  return APP_ORDER_STATUS[Math.min(...known.map((st) => PRINTFUL_PROGRESS[st]))];
 }
 
 export function orderTitle(order) {
@@ -268,6 +287,47 @@ export function toCents(amount) {
 // The checkout/order custom fields that tie a Wix order to the app.
 export const FIELD_DEVICE = 'Design Your Pet app device';
 export const FIELD_DESIGNS = 'Design Your Pet designs';
+// Which design goes on which line: "designId|productId|variantId,..." in cart order.
+export const FIELD_LINES = 'Design Your Pet lines';
+
+export function encodeLines(entries) {
+  return entries.map((e) => `${e.designId}|${e.productId}|${e.variantId}`).join(',');
+}
+
+// Store products have no custom-text field, so a line item can't carry its
+// design. Instead the checkout lists design/product/variant in order, and each
+// order line takes the first unused entry with the same product and variant.
+// Returns the design id for `target`, or null.
+export function designForLine(encoded, lineItems, target) {
+  const entries = String(encoded ?? '')
+    .split(',')
+    .filter(Boolean)
+    .map((e) => {
+      const [designId, productId, variantId] = e.split('|');
+      return { designId, productId, variantId, used: false };
+    });
+  const key = (l) => [l.catalogReference?.catalogItemId, l.catalogReference?.options?.variantId];
+  const idOfLine = (l) => l?._id ?? l?.id;
+  for (const line of lineItems ?? []) {
+    const [productId, variantId] = key(line);
+    const entry = entries.find((e) => !e.used && e.productId === productId && e.variantId === variantId);
+    if (entry) entry.used = true;
+    if (idOfLine(line) === idOfLine(target)) return entry ? entry.designId : null;
+  }
+  return null;
+}
+
+// Wix merges checkout lines that point at the same product variant, so two
+// different designs on the same variant can't be told apart on the order.
+export function conflictingLines(entries) {
+  const seen = new Map();
+  for (const e of entries) {
+    const k = `${e.productId}|${e.variantId}`;
+    if (seen.has(k) && seen.get(k) !== e.designId) return true;
+    seen.set(k, e.designId);
+  }
+  return false;
+}
 
 export function readCustomField(entity, title) {
   const field = (entity?.customFields ?? []).find((f) => f.title === title);

@@ -22,20 +22,23 @@ Pet page.
    `designs.js` and `store.js` with the contents of the files here.
 4. Add `http-functions.js` to **Backend**. If the site already has one, paste
    in the three `*_dyp` functions and the imports instead of replacing it.
-5. So paid orders are linked even if the customer never returns to the app,
-   add this to `backend/events.js` (create it if it doesn't exist; add to it
-   if it does):
+5. In `backend/events.js`, where the paid-order event finds the design for
+   each line item and calls `fulfillPetDesignLineItem`, ask the app first:
 
    ```js
-   import { linkOrder } from 'backend/dyp/store';
+   import { appDesignForLineItem } from 'backend/dyp/store';
 
-   export async function wixEcom_onOrderCreated(event) {
-     await linkOrder(event.entity);
-   }
+   // for each line item of a paid order:
+   const designId = (await appDesignForLineItem(order, lineItem)) ?? /* the website's existing lookup */;
+   await fulfillPetDesignLineItem(order, lineItem, designId);
    ```
 
-   If the site already has a `wixEcom_onOrderCreated`, call `linkOrder` from
-   inside it.
+   `appDesignForLineItem` returns `null` for website orders, so they carry on
+   exactly as now. Store products have no custom-text field, so the app
+   records which design goes on which line in an order custom field
+   ("Design Your Pet lines") and matches lines by product and variant.
+   `printfulOrders.js` then sends it to Printful and marks the design
+   `ordered`, as it does for the website.
 6. Add the app's photo clean-up to the nightly job that already runs
    `deleteOldUnorderedDesigns(7)` (in the site's `backend/jobs.config` job
    function):
@@ -88,8 +91,18 @@ What the app backend adds around it:
 - The 10% bundle discount is the store's automatic discount. The backend
   doesn't apply it.
 - After payment, Wix sends the browser to `/_functions/dyp/return`, which
-  sets `orderId` and status `ordered` on the designs and redirects to
-  `designyourpet://confirmation?orderId=…`.
+  checks the order came from the app and redirects to
+  `designyourpet://confirmation?orderId=…`. It writes nothing:
+  `PetDesigns.orderId` is the Printful order ID and is set by
+  `printfulOrders.js`.
+- My orders reads each line's Printful order through the same `external_id`
+  as `printfulOrders.js` (Wix order number + line ID): a draft waiting for your
+  approval shows as "In review", pending or in process as "Printing",
+  fulfilled as "Shipped" with Printful's tracking link. `store.js` imports
+  `PRINTFUL_BASE` and `printfulHeaders` from `backend/printfulShared`.
+- Two different designs on the same product, colour and size in one cart
+  are refused at checkout: Wix merges identical variants into one line, and
+  then there's no telling which design to print.
 - `www.goodwookie.com` must be allowed as a redirect domain for checkout
   callbacks (Settings → Headless settings → Allowed redirect domains) if Wix
   asks for it.

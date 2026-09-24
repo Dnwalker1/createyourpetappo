@@ -7,22 +7,30 @@ import { checkout, orders, orderFulfillments } from '@wix/ecom';
 import { productsV3 } from '@wix/stores';
 import { redirects } from '@wix/redirects';
 import { auth } from '@wix/essentials';
+import { fetch } from 'wix-fetch';
+import { PRINTFUL_BASE, printfulHeaders } from 'backend/printfulShared';
 import {
   DAY_MS,
   FIELD_DESIGNS,
   FIELD_DEVICE,
+  FIELD_LINES,
+  conflictingLines,
+  designForLine,
+  encodeLines,
   PRODUCT_IDS,
   STORES_APP_ID,
   findApparelVariantId,
   isAllowedReturnUrl,
+  orderStatusFromPrintful,
   orderTitle,
+  printfulExternalId,
   parseCheckoutLines,
   readCustomField,
   toAppOrderStatus,
   toCents,
   withQuery,
 } from 'backend/dyp/rules';
-import { DypError, deviceOwnsOrder, markOrdered, orderableDesigns, previewForOrder } from 'backend/dyp/designs';
+import { DypError, orderableDesigns, previewForDesign } from 'backend/dyp/designs';
 
 export const SITE_URL = 'https://www.goodwookie.com';
 const RETURN_FUNCTION = `${SITE_URL}/_functions/dyp/return`;
@@ -33,6 +41,7 @@ const MAX_ORDER_LOOKUPS = 20;
 const elevated = {
   getProduct: (...args) => auth.elevate(productsV3.getProduct)(...args),
   createCheckout: (...args) => auth.elevate(checkout.createCheckout)(...args),
+  getCheckout: (...args) => auth.elevate(checkout.getCheckout)(...args),
   createRedirectSession: (...args) => auth.elevate(redirects.createRedirectSession)(...args),
   getOrder: (...args) => auth.elevate(orders.getOrder)(...args),
   searchOrders: (...args) => auth.elevate(orders.searchOrders)(...args),
@@ -69,27 +78,29 @@ export async function createAppCheckout(deviceId, lines, returnUrl) {
   }
   await orderableDesigns(deviceId, parsed.designIds);
 
-  const lineItems = [];
+  const entries = [];
   for (const item of parsed.items) {
-    lineItems.push({
-      quantity: item.quantity,
-      catalogReference: {
-        appId: STORES_APP_ID,
-        catalogItemId: PRODUCT_IDS[item.choice.product],
-        options: { variantId: await variantIdFor(item.choice) },
-      },
-    });
+    entries.push({ ...item, productId: PRODUCT_IDS[item.choice.product], variantId: await variantIdFor(item.choice) });
   }
+  if (conflictingLines(entries)) {
+    throw new DypError('CART_CONFLICT', 409, 'Two different designs on the same product, colour and size need separate orders.');
+  }
+  const lineItems = entries.map((e) => ({
+    quantity: e.quantity,
+    catalogReference: { appId: STORES_APP_ID, catalogItemId: e.productId, options: { variantId: e.variantId } },
+  }));
 
   const created = await elevated.createCheckout({
     lineItems,
     channelType: 'WEB',
     checkoutInfo: {
-      // These travel with the order, so the order can be tied back to the
-      // device and to the designs to print.
+      // These tie the order back to the phone and say which design goes on
+      // which line (see appDesignForLineItem). They also show on the order in
+      // the dashboard.
       customFields: [
         { title: FIELD_DEVICE, value: deviceId },
         { title: FIELD_DESIGNS, value: parsed.designIds.join(',') },
+        { title: FIELD_LINES, value: encodeLines(entries) },
       ],
     },
   });
@@ -125,16 +136,28 @@ async function orderForCheckout(checkoutId, orderIdHint) {
   return null;
 }
 
-// Ties a paid order to the app device and marks its designs as ordered.
-// Safe to call more than once. Also call it from backend/events.js
-// (wixEcom_onOrderCreated) so orders are linked even if the customer never
-// comes back to the app.
-export async function linkOrder(order) {
-  const deviceId = readCustomField(order, FIELD_DEVICE);
-  const designIds = (readCustomField(order, FIELD_DESIGNS) ?? '').split(',').filter(Boolean);
-  if (!deviceId || !designIds.length) return false;
-  await markOrdered(deviceId, designIds, order._id);
-  return true;
+// The app's custom fields for an order. They're set on the checkout; if the
+// order doesn't carry them, read them from the checkout it came from.
+async function appFields(order) {
+  let source = order;
+  if (!readCustomField(order, FIELD_DEVICE) && order.checkoutId) {
+    const res = await elevated.getCheckout(order.checkoutId).catch(() => null);
+    source = res?.checkout ?? res ?? order;
+  }
+  return {
+    deviceId: readCustomField(source, FIELD_DEVICE),
+    designIds: (readCustomField(source, FIELD_DESIGNS) ?? '').split(',').filter(Boolean),
+    lines: readCustomField(source, FIELD_LINES),
+  };
+}
+
+// For backend/events.js: the PetDesigns record to print for one line of an
+// order placed from the app, or null if the order didn't come from the app.
+// Pass the result to fulfillPetDesignLineItem(order, lineItem, designId).
+export async function appDesignForLineItem(order, lineItem) {
+  const fields = await appFields(order);
+  if (!fields.deviceId || !fields.lines) return null;
+  return designForLine(fields.lines, order.lineItems, lineItem);
 }
 
 // GET /return — where Wix sends the browser after checkout. Redirects into
@@ -144,14 +167,13 @@ export async function handleCheckoutReturn(query) {
   if (query.result !== 'paid' || !query.checkoutId) return to; // closed without paying: the app keeps the cart
   const order = await orderForCheckout(query.checkoutId, query.orderId);
   if (!order) return withQuery(to, { checkoutId: query.checkoutId });
-  if (!(await linkOrder(order))) {
-    // The checkout wasn't made by the app; don't hand its order out.
-    return to;
-  }
+  // Only hand out orders the app made. Printful fulfilment (events.js) marks
+  // the designs as ordered once the order is paid.
+  if (!(await appFields(order)).deviceId) return to;
   return withQuery(to, { orderId: order._id });
 }
 
-async function trackingUrl(orderId) {
+async function wixTrackingUrl(orderId) {
   try {
     const res = await elevated.listFulfillments(orderId);
     const list = res.orderWithFulfillments?.fulfillments ?? [];
@@ -161,6 +183,27 @@ async function trackingUrl(orderId) {
   }
 }
 
+// Status and tracking from Printful, one Printful order per Wix line (see the
+// site's printfulOrders.js). Best effort: returns { status: null } if Printful
+// can't be reached or has nothing yet.
+async function printfulProgress(order) {
+  const statuses = [];
+  let tracking = null;
+  try {
+    const headers = await printfulHeaders();
+    for (const line of order.lineItems ?? []) {
+      const resp = await fetch(`${PRINTFUL_BASE}/orders/@${printfulExternalId(order, line)}`, { method: 'GET', headers });
+      if (!resp.ok) continue;
+      const result = (await resp.json()).result ?? {};
+      statuses.push(result.status);
+      tracking = tracking ?? (result.shipments ?? []).map((sh) => sh.tracking_url).find(Boolean) ?? null;
+    }
+  } catch (err) {
+    console.warn('dyp: Printful status unavailable', err);
+  }
+  return { status: orderStatusFromPrintful(statuses), tracking };
+}
+
 // GET /orders -> the orders from `ids` that this device placed.
 export async function listAppOrders(deviceId, ids) {
   const wanted = [...new Set(ids)].slice(0, MAX_ORDER_LOOKUPS);
@@ -168,19 +211,20 @@ export async function listAppOrders(deviceId, ids) {
   for (const id of wanted) {
     const order = await elevated.getOrder(id).catch(() => null);
     if (!order || order.status === 'INITIALIZED') continue;
-    const owned = readCustomField(order, FIELD_DEVICE) === deviceId || (await deviceOwnsOrder(deviceId, order._id));
-    if (!owned) continue;
-    const tracking = await trackingUrl(order._id);
+    const fields = await appFields(order);
+    if (fields.deviceId !== deviceId) continue;
+    const printful = await printfulProgress(order);
+    const tracking = printful.tracking ?? (await wixTrackingUrl(order._id));
     out.push({
       id: order._id,
       number: String(order.number),
       createdAt: new Date(order._createdDate).toISOString(),
-      status: toAppOrderStatus(order, Boolean(tracking)),
+      status: printful.status ?? toAppOrderStatus(order, Boolean(tracking)),
       title: orderTitle(order),
       itemCount: (order.lineItems ?? []).reduce((n, l) => n + (l.quantity ?? 1), 0),
       totalCents: toCents(order.priceSummary?.total?.amount),
       trackingUrl: tracking,
-      previewUrl: await previewForOrder(order._id),
+      previewUrl: await previewForDesign(fields.designIds[0]),
     });
   }
   return out.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));

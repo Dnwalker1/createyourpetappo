@@ -234,23 +234,8 @@ export async function createDesign(deviceId, { photoId, style, text }) {
   return { designId: result.designRecordId };
 }
 
-// Marks designs as ordered, the way the website links a design to its order.
-export async function markOrdered(deviceId, designIds, orderId) {
-  if (!designIds.length) return;
-  const res = await wixData.query(COLLECTION).hasSome('_id', designIds).eq('visitorId', deviceId).limit(1000).find(DATA);
-  for (const item of res.items) {
-    if (item.orderId === orderId && item.status === 'ordered') continue;
-    await wixData.update(COLLECTION, { ...item, orderId, status: 'ordered' }, DATA);
-  }
-}
-
-// The watermarked preview of the first design linked to an order.
-export async function previewForOrder(orderId) {
-  const res = await wixData.query(COLLECTION).eq('orderId', orderId).limit(1).find(DATA);
-  return res.items.length ? mediaUrl(res.items[0].previewArtUrl) : null;
-}
-
-export async function deviceOwnsOrder(deviceId, orderId) {
-  const n = await wixData.query(COLLECTION).eq('orderId', orderId).eq('visitorId', deviceId).count(DATA);
-  return n > 0;
+// The watermarked preview of a design, for the orders list.
+export async function previewForDesign(designId) {
+  const item = designId ? await wixData.get(COLLECTION, designId, DATA) : null;
+  return item ? mediaUrl(item.previewArtUrl) : null;
 }

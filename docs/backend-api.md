@@ -43,6 +43,7 @@ Any non-2xx response has this body:
 | `TRIES_LIMIT` | 429 | 12 attempts in the rolling 24 hours. `unlocksAt` = oldest attempt + 24 h. | 12 tries |
 | `STUDIO_BUSY` | 503 | Site-wide ceiling of 180 designs an hour. Uses nothing. | Studio busy |
 | `DESIGN_IN_PROGRESS` | 409 | This device already has a design being made. | Inline notice on the style screen |
+| `CART_CONFLICT` | 409 | Checkout: two different designs on the same product, colour and size. | Inline notice on the checkout screen |
 
 Times are ISO 8601 strings in UTC. The app shows them in the customer's local
 time.
@@ -185,13 +186,16 @@ The app opens `checkoutUrl` in a secure in-app browser. After payment, Wix
 must redirect to `returnUrl` with the order ID:
 `designyourpet://confirmation?orderId=…`. The backend does this with a Wix
 redirect session whose `thankYouPageUrl` and `postFlowUrl` point at
-`GET /_functions/dyp/return`, which finds the order, marks its designs as
-ordered and answers with a 302 into the app. If the customer closes checkout
+`GET /_functions/dyp/return`, which finds the order, checks it came from the
+app and answers with a 302 into the app. The site's `events.js` /
+`printfulOrders.js` sends each line to Printful and marks its design ordered. If the customer closes checkout
 without paying, nothing happens and the app keeps the cart.
 
-The device ID and design IDs travel on the checkout as two custom fields,
-"Design Your Pet app device" and "Design Your Pet designs", so they show on
-the order in the dashboard too.
+The device ID, design IDs and which design goes on which line travel on the
+checkout as custom fields ("Design Your Pet app device", "Design Your Pet
+designs", "Design Your Pet lines"), so they show on the order in the dashboard
+too. Two different designs on the same product, colour and size in one cart
+are refused with `CART_CONFLICT`, because Wix merges them into one line.
 
 ### `GET /_functions/dyp/orders?deviceId=…&ids=a,b,c`
 
@@ -204,7 +208,7 @@ Returns only orders placed with this `deviceId`:
       "id": "...",
       "number": "10042",
       "createdAt": "2026-09-23T18:40:00Z",
-      "status": "in-review | printing | shipped | delivered",
+      "status": "in-review | printing | shipped",
       "title": "Buy them all bundle",
       "itemCount": 5,
       "totalCents": 12795,
@@ -214,6 +218,10 @@ Returns only orders placed with this `deviceId`:
   ]
 }
 ```
+
+`status` comes from the Printful orders `printfulOrders.js` creates (draft →
+in-review, pending or in process → printing, fulfilled → shipped). Printful
+doesn't report delivery, so `delivered` is never sent.
 
 `number` is the real Wix order number, without the `#`; the app adds it.
 Never generate one in the app.
