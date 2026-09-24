@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Screen, StepHeader } from '../components/ui';
+import { ImageViewer } from '../components/ImageViewer';
 import { ProductPreview } from '../components/ProductPreview';
 import { BUNDLE_DISCOUNT, DEFAULT_CHOICES, PRODUCT_ORDER, PRODUCTS, priceRange, styleById } from '../data/catalog';
 import { bundleItemsCents } from '../lib/cart';
@@ -23,6 +25,7 @@ function cheapestBundleCents(): number {
 export default function Result() {
   const { activeDesign, setPhoto } = useAppState();
   const { line } = useLimits();
+  const [viewing, setViewing] = useState(false);
 
   if (!activeDesign) {
     return (
@@ -36,9 +39,11 @@ export default function Result() {
   return (
     <Screen footer={<Body style={{ textAlign: 'center', fontSize: 14 }}>Free shipping on everything in the store.</Body>}>
       <StepHeader step={5} label={`STEP 5 OF 5 · ${styleById(activeDesign.styleId).name.toUpperCase()}`} />
-      <View style={styles.preview}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Enlarge your design" onPress={() => setViewing(true)} style={styles.preview}>
         <ProductPreview choice={DEFAULT_CHOICES.tee} design={activeDesign.preview} size={196} />
-      </View>
+        <Text style={styles.enlarge}>Tap to enlarge</Text>
+      </Pressable>
+      <ImageViewer source={activeDesign.preview} visible={viewing} onClose={() => setViewing(false)} label={`Your ${styleById(activeDesign.styleId).name} design`} />
       <View style={styles.twoUp}>
         <View style={{ flex: 1 }}>
           <Button variant="secondary" title="Try another style" onPress={() => router.push('/style')} />
@@ -88,6 +93,7 @@ export default function Result() {
 
 const styles = StyleSheet.create({
   preview: { height: 200, borderRadius: 20, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.agedCream, alignItems: 'center', justifyContent: 'center' },
+  enlarge: { position: 'absolute', right: 12, bottom: 10, fontFamily: fonts.bodySemi, fontSize: 13, color: colors.slate },
   twoUp: { flexDirection: 'row', gap: 10 },
   h2: { fontFamily: fonts.display, fontSize: 20, color: colors.navy },
   productRow: {
