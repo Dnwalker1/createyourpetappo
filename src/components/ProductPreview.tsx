@@ -8,11 +8,15 @@ import { colors } from '../theme';
 // between the neckline and the pocket.
 const PLACEMENT = {
   tee: { top: 0.21, size: 0.29 },
-  hoodie: { top: 0.33, size: 0.27 },
+  // Measured on the eight "ghost mannequin" hoodie photos (every color but
+  // Bone): the neckline ends about 21% down and the pocket starts about 60%
+  // down, so the design sits in between with a small gap under the collar.
+  // It used to be 0.33 / 0.27, which pushed it down onto the pocket.
+  hoodie: { top: 0.25, size: 0.25 },
 } as const;
 
-// The Bone hoodie photo shows the whole hood, so the body sits lower and
-// smaller in the frame than the other colors.
+// The Bone hoodie photo is a different shot (laid flat, hood standing up), so
+// its chest sits lower in the frame than the other colors.
 const COLOR_PLACEMENT: Record<string, { top: number; size: number }> = {
   'hoodie:Bone': { top: 0.37, size: 0.24 },
 };

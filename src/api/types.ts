@@ -69,6 +69,8 @@ export type CheckoutLine =
 
 export type OrderStatus = 'in-review' | 'printing' | 'shipped' | 'delivered';
 
+export type OrderItem = { title: string; detail: string; quantity: number };
+
 export type Order = {
   id: string;
   /** The Wix order number, shown as "Order #10042". */
@@ -80,6 +82,8 @@ export type Order = {
   totalCents: number;
   trackingUrl?: string;
   preview?: ImageSourcePropType | null;
+  /** What was ordered, for the order's detail view. */
+  items: OrderItem[];
 };
 
 export interface DesignYourPetApi {

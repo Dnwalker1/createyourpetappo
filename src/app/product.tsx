@@ -38,7 +38,7 @@ export default function Product() {
       footer={
         <>
           <Button title="Add to cart" disabled={!activeDesign} onPress={add} />
-          <Body style={{ textAlign: 'center', fontSize: 14 }}>You can keep designing afterward and add more than one.</Body>
+          <Body style={{ textAlign: 'center', fontSize: 14 }}>Add it and keep designing. There&apos;s no limit on how many shirts one dog can have.</Body>
         </>
       }
     >

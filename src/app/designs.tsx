@@ -46,13 +46,13 @@ export default function Designs() {
             <Text style={styles.addText}>+</Text>
           </Pressable>
         </View>
-        <Body style={{ fontSize: 15 }}>Everything you made in the last 7 days. Tap one to see it on your shirt again. It won&apos;t use another design.</Body>
+        <Body style={{ fontSize: 15 }}>Everything you made in the last 7 days. Tap one to put it back on a shirt. It doesn&apos;t cost you another design.</Body>
         {line ? <Text style={styles.limit}>{line}</Text> : null}
 
         {designs === null ? <ActivityIndicator color={colors.navy} /> : null}
         {designs && !designs.length ? (
           <View style={{ gap: 12 }}>
-            <Body>No designs yet.</Body>
+            <Body>Nothing here yet. Every collection starts with one.</Body>
             <Button title="Make your first design" onPress={() => router.push('/upload')} />
           </View>
         ) : null}
@@ -73,7 +73,7 @@ export default function Designs() {
             </Pressable>
           ))}
         </View>
-        <Body style={{ fontSize: 13 }}>Designs you don&apos;t order are deleted automatically after 7 days.</Body>
+        <Body style={{ fontSize: 13 }}>Designs you don&apos;t order are deleted after 7 days. We don&apos;t keep what we don&apos;t need.</Body>
       </ScrollView>
       <BottomNav current="designs" />
     </SafeAreaView>

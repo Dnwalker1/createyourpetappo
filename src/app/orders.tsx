@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, Order, OrderStatus } from '../api';
 import { BottomNav } from '../components/BottomNav';
@@ -22,7 +22,7 @@ const NOTES: Record<OrderStatus, string> = {
   'in-review': 'Being reviewed by hand before it goes to print.',
   printing: 'Being printed. Shipping is free.',
   shipped: 'On its way. Shipping is free.',
-  delivered: 'Delivered. Enjoy it!',
+  delivered: 'Delivered. Go put it on.',
 };
 
 // "Sep 23, 2026" in the customer's local time.
@@ -31,6 +31,8 @@ const formatDate = (ms: number) => new Date(ms).toLocaleDateString('en-US', { mo
 export default function Orders() {
   const { deviceId } = useAppState();
   const [orders, setOrders] = useState<Order[] | null>(null);
+  // The order whose items are shown. Tap a card to open or close it.
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -59,8 +61,16 @@ export default function Orders() {
         {orders && !orders.length ? <Body>No orders yet. Orders you place in this app show up here.</Body> : null}
         {orders?.map((o) => {
           const at = STAGES.findIndex((s) => s.key === o.status);
+          const open = openId === o.id;
           return (
             <Card key={o.id} style={{ gap: 12 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+                accessibilityHint={open ? 'Hides the items in this order' : 'Shows the items in this order'}
+                onPress={() => setOpenId(open ? null : o.id)}
+                style={{ gap: 12 }}
+              >
               <View style={styles.line}>
                 <Text style={styles.number}>Order #{o.number}</Text>
                 <Text style={styles.muted}>{formatDate(o.createdAt)}</Text>
@@ -71,8 +81,24 @@ export default function Orders() {
                   <Text style={styles.itemTitle}>{o.title}</Text>
                   <Text style={styles.muted}>{o.itemCount === 1 ? '1 item' : `${o.itemCount} items`}</Text>
                 </View>
-                {o.totalCents ? <Text style={styles.number}>{formatMoney(o.totalCents)}</Text> : null}
+                <Text style={styles.number}>{formatMoney(o.totalCents)}</Text>
               </View>
+              {open ? (
+                <View style={styles.items}>
+                  {o.items.map((it, i) => (
+                    <View key={i} style={styles.line}>
+                      <Text style={[styles.muted, { flex: 1 }]}>
+                        {it.title}
+                        {it.detail ? ` · ${it.detail}` : ''}
+                      </Text>
+                      <Text style={styles.muted}>× {it.quantity}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.more}>Tap to see what&apos;s in it</Text>
+              )}
+              </Pressable>
               <View accessibilityLabel={`Status: ${STAGES[at]?.label ?? o.status}`} style={{ gap: 6 }}>
                 <View style={styles.bars}>
                   {STAGES.map((s, i) => (
@@ -116,6 +142,8 @@ const styles = StyleSheet.create({
   muted: { fontFamily: fonts.body, fontSize: 14, color: colors.slate },
   thumb: { width: 52, height: 52, borderRadius: 10, backgroundColor: colors.paper },
   itemTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.navy },
+  items: { gap: 6, paddingTop: 4, borderTopWidth: 1, borderTopColor: colors.agedCream },
+  more: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.bronze },
   bars: { flexDirection: 'row', gap: 4 },
   bar: { flex: 1, height: 6, borderRadius: 3 },
   stage: { flex: 1, fontFamily: fonts.body, fontSize: 12, color: colors.slate },

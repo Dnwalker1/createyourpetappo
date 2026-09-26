@@ -40,8 +40,8 @@ export default function Confirmation() {
         </H1>
         {number ? <Text style={styles.number}>ORDER #{number}</Text> : null}
         <View style={styles.steps}>
-          <Step n={1} title="Reviewed by hand.">Every order is checked personally before it&apos;s printed.</Step>
-          <Step n={2} title="Printed on demand.">Allow a few days for production.</Step>
+          <Step n={1} title="Reviewed by hand.">A person looks at every order before it&apos;s printed. That person is me.</Step>
+          <Step n={2} title="Printed on demand.">Nothing sits in a warehouse. Allow a few days.</Step>
           <Step n={3} title="Shipped free.">You&apos;ll see tracking in My orders once it ships.</Step>
         </View>
         <Body tone="dark" style={{ textAlign: 'center', fontSize: 15 }}>

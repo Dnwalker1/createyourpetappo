@@ -12,7 +12,7 @@ import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 export default function Result() {
-  const { activeDesign, setPhoto } = useAppState();
+  const { activeDesign, photo, setPhoto } = useAppState();
   const { line } = useLimits();
   const [viewing, setViewing] = useState(false);
 
@@ -26,7 +26,7 @@ export default function Result() {
   }
 
   return (
-    <Screen footer={<Body style={{ textAlign: 'center', fontSize: 14 }}>Free shipping on everything in the store.</Body>}>
+    <Screen footer={<Body style={{ textAlign: 'center', fontSize: 14 }}>Free shipping on everything in the store. We cover that part.</Body>}>
       <StepHeader step={5} label={`STEP 5 OF 5 · ${styleById(activeDesign.styleId).name.toUpperCase()}`} />
       <Pressable accessibilityRole="button" accessibilityLabel="Enlarge your design" onPress={() => setViewing(true)} style={styles.preview}>
         <ProductPreview choice={DEFAULT_CHOICES.tee} design={activeDesign.preview} size={196} />
@@ -35,7 +35,16 @@ export default function Result() {
       <ImageViewer source={activeDesign.preview} visible={viewing} onClose={() => setViewing(false)} label={`Your ${styleById(activeDesign.styleId).name} design`} />
       <View style={styles.twoUp}>
         <View style={{ flex: 1 }}>
-          <Button variant="secondary" title="Try another style" onPress={() => router.push('/style')} />
+          <Button
+            variant="secondary"
+            title="Try another style"
+            onPress={() =>
+              // A design reopened from Your designs has no photo loaded (the
+              // app doesn't keep it), so ask for it again rather than failing
+              // with "didn't finish uploading".
+              photo ? router.push('/style') : router.push({ pathname: '/upload', params: { again: '1' } })
+            }
+          />
         </View>
         <View style={{ flex: 1 }}>
           <Button

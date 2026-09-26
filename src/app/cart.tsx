@@ -22,7 +22,7 @@ export default function Cart() {
       }
     >
       <TitleBar title="Your cart" right={<Text style={styles.count}>{totals.itemCount === 1 ? '1 item' : `${totals.itemCount} items`}</Text>} />
-      {!cart.length ? <Body>Your cart is empty. Pick a product for one of your designs.</Body> : null}
+      {!cart.length ? <Body>Your cart is empty. That&apos;s fixable. Pick a product for one of your designs.</Body> : null}
 
       {cart.map((item) =>
         item.kind === 'bundle' ? (

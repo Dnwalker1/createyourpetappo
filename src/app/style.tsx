@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Keyboard, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../api';
 import { Alert, Body, Button, Checkbox, H1, Screen, StepHeader } from '../components/ui';
 import { MAX_TEXT_LENGTH, STYLES, styleById } from '../data/catalog';
@@ -10,12 +10,24 @@ import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 export default function Style() {
-  const { styleId, setStyleId, text, setText, includePeople, setIncludePeople, peopleConsent, setPeopleConsent, startDesign } = useAppState();
+  const { photo, styleId, setStyleId, text, setText, includePeople, setIncludePeople, peopleConsent, setPeopleConsent, startDesign } = useAppState();
   const [busy, setBusy] = useState(false);
   const [textError, setTextError] = useState<string | null>(null);
   const [inProgress, setInProgress] = useState(false);
   const [checkerBusy, setCheckerBusy] = useState(false);
   const style = styleById(styleId);
+  // Where the text field sits on the page, so it can be scrolled above the keyboard.
+  const scrollRef = useRef<ScrollView>(null);
+  const textY = useRef(0);
+  function showTextField() {
+    const scroll = () => scrollRef.current?.scrollTo({ y: Math.max(0, textY.current - 24), animated: true });
+    // Wait for the keyboard to finish opening, then scroll.
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      sub.remove();
+      scroll();
+    });
+    setTimeout(scroll, 350);
+  }
 
   async function generate() {
     setBusy(true);
@@ -27,7 +39,7 @@ export default function Style() {
       router.push({ pathname: '/generating', params: { designId } });
     } catch (e) {
       if (e instanceof ApiError && e.code === 'TEXT_REJECTED') {
-        setTextError("That text can't be printed. Please avoid profanity and trademarked names or titles. Try your pet's own name instead.");
+        setTextError("That one can't go on a shirt. It reads as a trademark or a word we don't print. Try your pet's actual name.");
       } else if (e instanceof ApiError && e.code === 'DESIGN_IN_PROGRESS') {
         setInProgress(true);
       } else if (e instanceof ApiError && e.code === 'PEOPLE_CONSENT_NEEDED') {
@@ -45,6 +57,7 @@ export default function Style() {
 
   return (
     <Screen
+      scrollRef={scrollRef}
       footer={
         <>
           <Button title={busy ? 'Starting…' : 'Generate design'} disabled={busy || !!textError || (includePeople && !peopleConsent)} onPress={generate} />
@@ -64,8 +77,16 @@ export default function Style() {
       <StepHeader step={3} label="STEPS 2 & 3 OF 5" />
       <View style={{ gap: 6 }}>
         <H1>Choose a style</H1>
-        <Body>Try all four on the same photo and decide afterward.</Body>
+        <Body>Try all four on the same photo. Decide afterward.</Body>
       </View>
+
+      {photo ? (
+        <View style={styles.photoRow}>
+          <Image source={{ uri: photo.uri }} style={styles.photoThumb} contentFit="cover" accessibilityIgnoresInvertColors />
+          <Body style={{ flex: 1, fontSize: 15 }}>Using this photo.</Body>
+          <Button variant="link" title="Change" onPress={() => router.push('/upload')} />
+        </View>
+      ) : null}
 
       <View style={styles.grid} accessibilityRole="radiogroup">
         {STYLES.map((s) => {
@@ -89,7 +110,7 @@ export default function Style() {
       </View>
 
       {style.allowsText ? (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 8 }} onLayout={(e) => (textY.current = e.nativeEvent.layout.y)}>
           <View style={styles.labelRow}>
             <Text nativeID="textLabel" style={styles.fieldLabel}>
               Add text (optional)
@@ -107,6 +128,8 @@ export default function Style() {
               setTextError(null);
             }}
             maxLength={MAX_TEXT_LENGTH}
+            onFocus={showTextField}
+            returnKeyType="done"
             placeholder="Your pet's name"
             placeholderTextColor={colors.slate}
             style={[styles.input, textError ? { borderColor: colors.error, borderWidth: 2 } : null]}
@@ -116,12 +139,12 @@ export default function Style() {
               {textError}
             </Text>
           ) : (
-            <Body style={{ fontSize: 14 }}>Up to 18 characters. No profanity or protected names, or the design is rejected.</Body>
+            <Body style={{ fontSize: 14 }}>Up to 18 characters. Your pet&apos;s name works. Profanity and trademarked names don&apos;t.</Body>
           )}
         </View>
       ) : (
         <View style={styles.note}>
-          <Body style={{ fontSize: 15 }}>Text can be added to the Travel Stamp and Travel Poster styles.</Body>
+          <Body style={{ fontSize: 15 }}>Words only fit on the Travel Stamp and the Travel Poster. The other two let the picture do the talking.</Body>
         </View>
       )}
 
@@ -152,7 +175,7 @@ export default function Style() {
 
       {inProgress ? (
         <Alert title="A design is already being made">
-          <Body>Only one design can be made at a time. Wait for it to finish, then try again.</Body>
+          <Body>One at a time. The last design is still in the oven. Give it a minute.</Body>
         </Alert>
       ) : null}
       {checkerBusy ? (
@@ -165,6 +188,8 @@ export default function Style() {
 }
 
 const styles = StyleSheet.create({
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  photoThumb: { width: 48, height: 48, borderRadius: 10, backgroundColor: colors.paper },
   people: { gap: 12, padding: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.agedCream },
   peopleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   consentText: { fontFamily: fonts.body, fontSize: 15, color: colors.navy },

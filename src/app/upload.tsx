@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
@@ -15,6 +15,7 @@ const PRIVACY_URL: string = Constants.expoConfig?.extra?.privacyPolicyUrl ?? 'ht
 
 export default function Upload() {
   const { photo, setPhoto, uploadPhoto } = useAppState();
+  const { again } = useLocalSearchParams<{ again?: string }>();
   const [ownsPhoto, setOwnsPhoto] = useState(false);
   const [aiConsent, setAiConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -55,7 +56,11 @@ export default function Upload() {
       <StepHeader step={1} />
       <View style={{ gap: 6 }}>
         <H1>Add your photo</H1>
-        <Body>One photo is all it takes. You can try every style on it without uploading again.</Body>
+        <Body>
+          {again && !photo
+            ? 'To try another style, add the photo again. We don\u2019t keep your photos on this phone once a design is done.'
+            : 'One photo. You can try every style on it without uploading it again.'}
+        </Body>
       </View>
 
       <View style={styles.drop}>
@@ -87,7 +92,7 @@ export default function Upload() {
         <Label>GETTING A GOOD RESULT</Label>
         <Tip strong="Get close.">Your pet should fill most of the frame.</Tip>
         <Tip strong="Good light.">Eyes visible, face and markings clear. A phone photo is fine.</Tip>
-        <Tip strong="More than one pet?">Put them in one photo. Two or three works best.</Tip>
+        <Tip strong="More than one pet?">Put them in one photo. Two or three works best. Nine is a crowd.</Tip>
       </View>
 
       <View style={styles.consent}>

@@ -1,5 +1,11 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import { createHttpApi } from './http';
 import { ApiError } from './types';
+
+jest.mock('expo-file-system/legacy', () => ({
+  FileSystemUploadType: { BINARY_CONTENT: 0, MULTIPART: 1 },
+  uploadAsync: jest.fn(),
+}));
 
 type Reply = { status?: number; body: unknown };
 
@@ -48,6 +54,25 @@ describe('http api', () => {
       .catch((e) => e)) as ApiError;
     expect(err.code).toBe('LIMIT_REACHED');
     expect(err.unlocksAt).toBe(Date.parse('2026-09-24T20:14:00Z'));
+  });
+
+  it('streams the photo file straight to the Wix upload address', async () => {
+    const calls = fakeFetch([{ body: { ok: true, uploadUrl: 'https://upload.wix.test/abc' } }]);
+    (FileSystem.uploadAsync as jest.Mock).mockResolvedValueOnce({ status: 200, body: JSON.stringify({ file: { id: 'f_1~mv2.jpg' } }) });
+    const res = await api().uploadPhoto(DEVICE, { uri: 'file:///cache/pet.jpg', mimeType: 'image/jpeg' });
+    expect(res).toEqual({ photoId: 'f_1~mv2.jpg' });
+    expect(calls[0].url).toBe('https://www.goodwookie.com/_functions/uploadUrl');
+    expect(FileSystem.uploadAsync).toHaveBeenCalledWith(
+      'https://upload.wix.test/abc?filename=pet.jpg',
+      'file:///cache/pet.jpg',
+      expect.objectContaining({ httpMethod: 'PUT', headers: { 'Content-Type': 'image/jpeg' } }),
+    );
+  });
+
+  it('reports a failed photo upload as UPLOAD_FAILED', async () => {
+    fakeFetch([{ body: { ok: true, uploadUrl: 'https://upload.wix.test/abc' } }]);
+    (FileSystem.uploadAsync as jest.Mock).mockResolvedValueOnce({ status: 500, body: 'nope' });
+    await expect(api().uploadPhoto(DEVICE, { uri: 'file:///cache/pet.jpg' })).rejects.toMatchObject({ code: 'UPLOAD_FAILED' });
   });
 
   it('waits and retries while the upload is not ready', async () => {

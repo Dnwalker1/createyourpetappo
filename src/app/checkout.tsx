@@ -7,10 +7,21 @@ import { Alert, Body, Button, Card, Label, Screen, TitleBar } from '../component
 import { describeChoice } from '../data/catalog';
 import { cartTotals, itemCents } from '../lib/cart';
 import { formatMoney } from '../lib/money';
+import { clearPendingCheckout, savePendingCheckout } from '../lib/pendingCheckout';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Chrome's package name when Chrome is installed and supports in-app tabs.
+async function chromePackage(): Promise<string | null> {
+  try {
+    const { browserPackages } = await WebBrowser.getCustomTabsSupportingBrowsersAsync();
+    return browserPackages.find((p) => p === 'com.android.chrome') ?? browserPackages.find((p) => p.startsWith('com.android.chrome') || p.startsWith('com.chrome.')) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // The app never takes payment. It asks the backend for a Wix checkout, opens
 // it, and when the customer comes back asks whether the order went through.
@@ -21,6 +32,8 @@ export default function Checkout() {
   // Set while a checkout is open in the browser and not yet confirmed.
   const [pendingId, setPendingId] = useState<string | null>(null);
   const checking = useRef(false);
+  // How checkout was opened, which decides how the way back is explained.
+  const [openedIn, setOpenedIn] = useState<'tab' | 'browser'>('tab');
   const totals = cartTotals(cart);
 
   // Paid? The order can take a moment to appear, so ask a few times.
@@ -34,6 +47,7 @@ export default function Checkout() {
           const status = await api.getCheckoutStatus(deviceId, checkoutId).catch(() => null);
           if (status?.completed) {
             setPendingId(null);
+            await clearPendingCheckout();
             clearCart();
             router.replace({ pathname: '/confirmation', params: status.orderNumber ? { number: status.orderNumber } : {} });
             return;
@@ -76,14 +90,28 @@ export default function Checkout() {
         return;
       }
       setPendingId(checkoutId);
+      await savePendingCheckout(checkoutId);
       if (Platform.OS === 'android') {
-        // Android: the phone's own browser, not an in-app custom tab. Some
-        // browsers' custom tabs (Edge) keep asking to "open the external app"
-        // while the Wix checkout loads. The order is checked when the customer
-        // comes back to the app (AppState listener above).
-        await Linking.openURL(checkoutUrl);
+        // Android: a Chrome tab on top of the app when Chrome is installed.
+        // Its ✕ (top left) closes it and lands the customer straight back
+        // here, which is the clear way back that was missing in testing.
+        //
+        // Not the phone's default browser's tab: Edge's kept asking to "open
+        // the external app" while the Wix checkout loaded. Without Chrome, the
+        // full browser opens instead and the customer switches back to the
+        // app. Either way the order is checked when the app comes back to the
+        // foreground (AppState listener above).
+        const chrome = await chromePackage();
+        if (chrome) {
+          setOpenedIn('tab');
+          await WebBrowser.openBrowserAsync(checkoutUrl, { browserPackage: chrome, showTitle: true, enableBarCollapsing: false });
+        } else {
+          setOpenedIn('browser');
+          await Linking.openURL(checkoutUrl);
+        }
         return;
       }
+      setOpenedIn('tab');
       // iOS: the in-app Safari sheet; this resolves when it closes.
       await WebBrowser.openBrowserAsync(checkoutUrl);
       await confirm(checkoutId);
@@ -108,7 +136,9 @@ export default function Checkout() {
           )}
           <Body style={{ textAlign: 'center', fontSize: 13 }}>
             {pendingId
-              ? 'Finished paying? Come back to this app and your order shows up here. Your cart is kept until the payment goes through.'
+              ? openedIn === 'tab'
+                ? 'Finished paying? Tap \u2715 at the top of the checkout page to come back here, and your order shows up. Your cart is kept until the payment goes through.'
+                : 'Finished paying? Switch back to this app (use your phone\u2019s app switcher) and your order shows up. Your cart is kept until the payment goes through.'
               : 'You\'ll pay on the Goodwookie store\'s secure checkout in your browser, then come back to this app. Every order is reviewed by hand before it\'s printed.'}
           </Body>
         </>

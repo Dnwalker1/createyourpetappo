@@ -53,13 +53,13 @@ export default function Problem() {
           <StepHeader step={1} />
           <H1>Add your photo</H1>
           <Alert title="We couldn't find a pet in this photo" icon={pawNavy}>
-            <Body>We&apos;ve deleted it, and it won&apos;t count toward your 5 designs.</Body>
+            <Body>We looked. We&apos;ve deleted it, and it doesn&apos;t count toward your 5.</Body>
           </Alert>
           <View style={{ gap: 10 }}>
             <Label>GETTING A GOOD RESULT</Label>
             <Tip strong="Get close.">Your pet should fill most of the frame.</Tip>
             <Tip strong="Good light.">Eyes visible, face and markings clear.</Tip>
-            <Tip strong="Skip the big scenery.">A small pet in a wide field or snowy landscape is hard to find.</Tip>
+            <Tip strong="Skip the big scenery.">A small dog in a big field makes a nice landscape and a hard portrait.</Tip>
           </View>
         </Screen>
       );
@@ -100,15 +100,15 @@ export default function Problem() {
               That one didn&apos;t come out right
             </H1>
             <Body tone="dark" style={{ textAlign: 'center' }}>
-              We couldn&apos;t get a clean design from this photo. A closer photo in good light usually fixes it.
+              We tried twice and couldn&apos;t get a clean design. A closer photo in better light usually fixes it.
             </Body>
-            <Text style={styles.banner}>This one didn&apos;t work out, so it won&apos;t count toward your 5 designs.</Text>
+            <Text style={styles.banner}>This one doesn&apos;t count.</Text>
           </Center>
         </Screen>
       );
     case 'limit':
       return (
-        <DarkLimit title="That's five for now" body="Every design costs real money to make, so everyone gets five free designs in any 24 hours." unlockLabel="Your next free design unlocks at" unlock={unlock}>
+        <DarkLimit title="That's five for now" body="Every design costs real money to make, so everyone gets five free in any 24 hours. The math isn't negotiable." unlockLabel="Your next free design unlocks at" unlock={unlock}>
           Designs that don&apos;t work out never count. Your designs are saved, and you can still order any of them.
         </DarkLimit>
       );

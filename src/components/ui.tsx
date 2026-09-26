@@ -1,24 +1,40 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { ReactNode } from 'react';
-import { ImageSourcePropType, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { ReactNode, RefObject } from 'react';
+import { ImageSourcePropType, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radius } from '../theme';
 
 type Tone = 'light' | 'dark';
 
-export function Screen({ children, tone = 'light', scroll = true, footer }: { children: ReactNode; tone?: Tone; scroll?: boolean; footer?: ReactNode }) {
+export function Screen({
+  children,
+  tone = 'light',
+  scroll = true,
+  footer,
+  scrollRef,
+}: {
+  children: ReactNode;
+  tone?: Tone;
+  scroll?: boolean;
+  footer?: ReactNode;
+  /** Lets a screen scroll a field into view when the keyboard opens. */
+  scrollRef?: RefObject<ScrollView | null>;
+}) {
   const bg = tone === 'dark' ? colors.navy : colors.cream;
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: bg }]} edges={['top', 'bottom']}>
-      {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[styles.fill, styles.content]}>{children}</View>
-      )}
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
+      {/* The keyboard pushes the page up instead of covering the field being typed in. */}
+      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        {scroll ? (
+          <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[styles.fill, styles.content]}>{children}</View>
+        )}
+        {footer ? <View style={styles.footer}>{footer}</View> : null}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -30,7 +30,7 @@ export default function Bundle() {
       footer={
         <>
           <Button title="Add bundle to cart" disabled={!activeDesign} onPress={add} />
-          <Body style={{ textAlign: 'center', fontSize: 14 }}>Free shipping on everything in the store.</Body>
+          <Body style={{ textAlign: 'center', fontSize: 14 }}>Free shipping on everything in the store. We cover that part.</Body>
         </>
       }
     >

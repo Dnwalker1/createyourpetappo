@@ -27,11 +27,11 @@ export default function Welcome() {
       <H1 tone="dark" heavy>
         Put Your Best Friend On A Shirt
       </H1>
-      <Body tone="dark">Upload a photo. Pick a style. We&apos;ll turn your pet into original Goodwookie artwork and print it on a soft, light tee.</Body>
+      <Body tone="dark">Upload a photo. Pick a style. We&apos;ll turn your pet into original Goodwookie artwork and put it on a shirt. Your pet doesn&apos;t have to sit still for any of it.</Body>
       <Row style={{ flexWrap: 'wrap', gap: 8 }}>
         <Pill tone="dark">About 1 minute</Pill>
         <Pill tone="dark">5 free designs every 24 hours</Pill>
-        <Pill tone="dark">No account</Pill>
+        <Pill tone="dark">No account. No password to forget.</Pill>
       </Row>
     </Screen>
   );

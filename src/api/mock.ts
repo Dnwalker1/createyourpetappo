@@ -95,6 +95,11 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
         itemCount,
         totalCents: 0,
         preview: first ? toDesign(first).preview : null,
+        items: lines.map((l) =>
+          l.kind === 'bundle'
+            ? { title: 'Buy them all bundle', detail: 'Tee, hoodie, sticker and poster', quantity: 1 }
+            : { title: l.choice.product, detail: l.choice.size, quantity: l.quantity },
+        ),
       });
       for (const l of lines) {
         const d = designs.get(l.designId);

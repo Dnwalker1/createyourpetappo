@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
 import { styleIdFrom, type ProductChoice } from '../data/catalog';
 import { ApiError, CheckoutLine, Design, DesignYourPetApi, ErrorCode, Limits, Order, OrderStatus } from './types';
 
@@ -114,6 +116,7 @@ function toOrder(o: Json): Order {
     totalCents: toCents(o.total),
     trackingUrl: (o.trackingUrl as string | undefined) || undefined,
     preview: firstPreview ? { uri: String(firstPreview) } : null,
+    items: items.map((i) => ({ title: String(i.title ?? ''), detail: String(i.detail ?? ''), quantity: Number(i.quantity ?? 1) })),
   };
 }
 
@@ -153,16 +156,32 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
     async uploadPhoto(deviceId, photo) {
       const mimeType = photo.mimeType ?? 'image/jpeg';
       const { uploadUrl } = await call(deviceId, '/uploadUrl', post({ mimeType }), 'UPLOAD_FAILED');
+      const ext = (mimeType.split('/')[1] ?? 'jpg').replace('jpeg', 'jpg');
+      const target = `${String(uploadUrl)}?filename=pet.${ext}`;
       try {
-        const blob = await (await fetch(photo.uri)).blob();
-        const ext = mimeType.split('/')[1] ?? 'jpg';
-        const res = await fetch(`${String(uploadUrl)}?filename=pet.${ext}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': mimeType },
-          body: blob,
-        });
-        if (!res.ok) throw new Error(`Upload ${res.status}`);
-        const file = ((await res.json()) as { file?: { id?: string } }).file;
+        let status: number;
+        let text: string;
+        if (Platform.OS === 'web') {
+          const blob = await (await fetch(photo.uri)).blob();
+          const res = await fetch(target, { method: 'PUT', headers: { 'Content-Type': mimeType }, body: blob });
+          status = res.status;
+          text = await res.text();
+        } else {
+          // On phones the photo is streamed straight from its file. Reading it
+          // into a Blob first (the old way) goes through Expo's fetch, which
+          // copies it via base64, and a photo picked from Google Photos could
+          // arrive at Wix empty. Wix then never finished processing it and
+          // Generate failed with "didn't finish uploading".
+          const res = await FileSystem.uploadAsync(target, photo.uri, {
+            httpMethod: 'PUT',
+            uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+            headers: { 'Content-Type': mimeType },
+          });
+          status = res.status;
+          text = res.body;
+        }
+        if (status < 200 || status >= 300) throw new Error(`Upload ${status}`);
+        const file = (JSON.parse(text) as { file?: { id?: string } }).file;
         if (!file?.id) throw new Error('No file id');
         return { photoId: file.id };
       } catch {
