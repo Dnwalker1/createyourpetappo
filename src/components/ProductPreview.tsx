@@ -7,18 +7,21 @@ import { colors } from '../theme';
 // Positions are fractions of the square Printful flat mockups: center chest,
 // between the neckline and the pocket.
 const PLACEMENT = {
-  tee: { top: 0.21, size: 0.29 },
+  // Matches Don's Printful tee layout (26 Sep): 10.7" wide, 3.2" down.
+  tee: { top: 0.26, size: 0.29 },
   // Measured on the eight "ghost mannequin" hoodie photos (every color but
   // Bone): the neckline ends about 21% down and the pocket starts about 60%
   // down, so the design sits in between with a small gap under the collar.
-  // It used to be 0.33 / 0.27, which pushed it down onto the pocket.
-  hoodie: { top: 0.25, size: 0.25 },
+  // Sized to match the print itself (Don's Printful layout, 26 Sep: about
+  // 9.9" wide, 2.1" below the top of the front area, ending just above the
+  // pocket). Before that it was 0.25 / 0.25, and before that 0.33 / 0.27.
+  hoodie: { top: 0.27, size: 0.3 },
 } as const;
 
 // The Bone hoodie photo is a different shot (laid flat, hood standing up), so
 // its chest sits lower in the frame than the other colors.
 const COLOR_PLACEMENT: Record<string, { top: number; size: number }> = {
-  'hoodie:Bone': { top: 0.37, size: 0.24 },
+  'hoodie:Bone': { top: 0.38, size: 0.26 },
 };
 
 export function ProductPreview({ choice, design, size = 220 }: { choice: ProductChoice; design: ImageSourcePropType | null; size?: number }) {
