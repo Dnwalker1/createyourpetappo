@@ -21,7 +21,7 @@ the live Wix backend provides are in `docs/backend-api.md`.
 | # | Screen | Canvas file | Notes |
 |---|---|---|---|
 | 1 | Welcome | `Main.dc.html` | Badge logo, sample designs, "Get started". |
-| 2 | Step 1: Add your photo | `Upload.dc.html` | Take or choose a photo; photo tips; confirm "I own this photo and there are no children in it." |
+| 2 | Step 1: Add your photo | `Upload.dc.html` | Take or choose a photo; photo tips; confirm "I own this photo and everyone in it is 13 or older." |
 | 3 | Steps 2–3: Style and text | `Style.dc.html` | Pick one of four styles. Optional text, up to 18 characters, only for Travel Stamp and Travel Poster. "Include the people in my photo" switch, off by default; when on, Generate needs the adults-and-consent checkbox. |
 | 4 | Step 4: Generate | `Generating.dc.html` | About a minute. |
 | 5 | Step 5: Pick your product | `Result.dc.html` | Design shown on a tee; "Try another style", "Use a new photo"; product list; bundle card. |
@@ -43,10 +43,9 @@ Works for any animal. Two or three pets in one photo is fine; more than that
 switches to portrait heads.
 
 People are left out of the artwork unless the customer switches on "Include
-the people in my photo" on the style screen and ticks "Everyone in this photo
-is 18 or older and agreed to be in the design." Then everyone in the photo is
+the people in my photo" on the style screen and ticks "Everyone in this photo is 13 or older, fully clothed, and agreed to be in it. I'm the parent or guardian of anyone under 18, or have their permission." Then everyone in the photo is
 drawn together with the pets, up to 6 people and pets in total. Photos that
-appear to include a child are refused either way.
+appear to include anyone under 13 are refused either way.
 
 ## Products and prices
 
@@ -136,7 +135,7 @@ Show each screen when its error happens, not from a button.
 | Upload fails | `UploadError.dc.html` | "Your photo didn't finish uploading … Nothing was used up." |
 | Photo checker unavailable | `CheckerDown.dc.html` | "Try again in a minute. Nothing was used up." |
 | No animal found in the photo | `NoPetFound.dc.html` | "We couldn't find a pet in this photo … it won't count toward your 5 designs." |
-| Photo fails the content check | `PhotoRejected.dc.html` | States the reason (a child, a well-known person, more than 6 people and pets, or general content); repeats the ground rules; "This won't count toward your 5 designs." |
+| Photo fails the content check | `PhotoRejected.dc.html` | States the reason (someone under 13, a well-known person, more than 6 people and pets, or general content); repeats the ground rules; "This won't count toward your 5 designs." |
 | Text rejected (profanity, protected names or titles) | `TextRejected.dc.html` | Blocks Generate until fixed; offers "Generate without text". |
 | Design fails | `GenerateFailed.dc.html` | "This one didn't work out, so it won't count toward your 5 designs." |
 | 5 designs in 24 hours | `LimitReached.dc.html` | "Your next free design unlocks at [local time]." |
@@ -215,8 +214,9 @@ September 23, 2026, is in `docs/privacy-policy.md`. What it commits the app to:
 - **Not used for** marketing, advertising or training AI models. Nothing is sold.
 - **Children:** not directed at children under 13.
 - **People in photos** are left out of the artwork unless the customer switches
-  on "Include the people in my photo" and confirms everyone is 18 or older and
-  agreed to be in the design. Photos that appear to include a child are refused.
+  on "Include the people in my photo" and confirms everyone is 13 or older and
+  agreed to be in the design (and is the parent or guardian of anyone under 18,
+  or has their permission). Photos that appear to include anyone under 13 are refused.
 
 ### Consent before sending a photo to AI
 
@@ -225,13 +225,13 @@ personal data is shared with a third-party AI service and to get the user's
 explicit permission first. The upload screen (`Upload.dc.html`) has two checkboxes, both required before
 Continue is enabled:
 
-1. "I own this photo and there are no children in it."
+1. "I own this photo and everyone in it is 13 or older."
 2. "I agree that my photo, and any text I add, is sent to Google's Gemini AI to
    create my design and run safety checks." with a link to the privacy policy.
 
 When the customer switches on "Include the people in my photo" on the style
 screen (`Style.dc.html`), a third checkbox is required before Generate:
-"Everyone in this photo is 18 or older and agreed to be in the design."
+"Everyone in this photo is 13 or older, fully clothed, and agreed to be in it. I'm the parent or guardian of anyone under 18, or have their permission."
 
 ### Store privacy disclosures (draft from the policy)
 

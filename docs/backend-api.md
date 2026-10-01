@@ -110,14 +110,14 @@ None of the failures count toward the 5; every attempt counts toward the 12.
 ## People in the photo
 
 - The style screen has a switch, "Include the people in my photo", off by
-  default. When it's on, a checkbox appears: "Everyone in this photo is 18 or
+  default. When it's on, a checkbox appears: "Everyone in this photo is 13 or
   older and agreed to be in the design." Generate stays disabled until it's
   ticked, and turning the switch off unticks it. Choosing a new photo resets
   both.
 - The app sends `includePeople: true, peopleConsent: true` only when both are
   on; otherwise it sends neither.
-- The server refuses any photo that appears to include a child, switch on or
-  off, so the upload screen's "no children" promise still holds.
+- The server refuses any photo that appears to include anyone under 13, switch
+  on or off, so the upload screen's "13 or older" promise still holds.
 
 ## Checkout
 

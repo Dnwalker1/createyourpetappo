@@ -16,7 +16,7 @@ type AppState = {
   text: string;
   /** Draw the people in the photo too. Needs peopleConsent. Resets with a new photo. */
   includePeople: boolean;
-  /** "Everyone in this photo is 18 or older and agreed to be in the design." */
+  /** "Everyone in this photo is 13 or older, fully clothed, and agreed to be in it…" */
   peopleConsent: boolean;
   /** The design shown on the result, product and bundle screens. */
   activeDesign: Design | null;

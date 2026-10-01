@@ -96,7 +96,7 @@ export interface DesignYourPetApi {
    */
   createDesign(
     deviceId: string,
-    /** includePeople is only sent true when the customer also ticked the adults-and-consent box. */
+    /** includePeople is only sent true when the customer also ticked the 13-and-over consent box. */
     input: { photoId: string; styleId: StyleId; text?: string; includePeople?: boolean },
   ): Promise<{ designId: string }>;
   getDesign(deviceId: string, designId: string): Promise<Design>;

@@ -97,7 +97,7 @@ export default function Upload() {
 
       <View style={styles.consent}>
         <Checkbox checked={ownsPhoto} onChange={setOwnsPhoto}>
-          <Text style={styles.consentText}>I own this photo and there are no children in it.</Text>
+          <Text style={styles.consentText}>I own this photo and everyone in it is 13 or older.</Text>
         </Checkbox>
         <Checkbox checked={aiConsent} onChange={setAiConsent}>
           <Text style={styles.consentText}>

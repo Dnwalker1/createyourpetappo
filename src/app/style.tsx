@@ -168,7 +168,7 @@ export default function Style() {
         </View>
         {includePeople ? (
           <Checkbox checked={peopleConsent} onChange={setPeopleConsent}>
-            <Text style={styles.consentText}>Everyone in this photo is 18 or older and agreed to be in the design.</Text>
+            <Text style={styles.consentText}>Everyone in this photo is 13 or older, fully clothed, and agreed to be in it. I&apos;m the parent or guardian of anyone under 18, or have their permission.</Text>
           </Checkbox>
         ) : null}
       </View>

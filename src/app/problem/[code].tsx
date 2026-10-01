@@ -75,7 +75,7 @@ export default function Problem() {
           <View style={{ gap: 10 }}>
             <Label>A PHOTO THAT WORKS</Label>
             <Tip strong="Your own photo">of your own pet.</Tip>
-            <Tip strong="No children,">yours or anyone else&apos;s.</Tip>
+            <Tip strong="Nobody under 13,">yours or anyone else&apos;s.</Tip>
             <Tip strong="No logos, characters or brands,">and no other artist&apos;s work.</Tip>
             <Tip strong="Keep it decent.">No nudity, violence or hateful imagery.</Tip>
           </View>

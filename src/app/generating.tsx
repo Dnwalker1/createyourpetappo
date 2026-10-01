@@ -12,7 +12,7 @@ import { colors, fonts } from '../theme';
 
 // What the photo-rejected screen says for each refusal reason from the backend.
 const REJECT_REASONS: Record<string, string> = {
-  child: 'It looks like there may be a child in it. Photos with children can\'t be used, even with the people switch on.',
+  child: 'It looks like someone in it may be younger than 13. Photos with anyone under 13 can\'t be used, even with the people switch on.',
   famous: 'It looks like a well-known person may be in it. We can only draw you, your people and your pets.',
   too_many: 'There are more than 6 people and pets in it. Try a photo with fewer.',
 };
