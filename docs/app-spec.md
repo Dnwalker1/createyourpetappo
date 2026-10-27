@@ -68,7 +68,7 @@ with just the right amount of stretch." Don't call it heavyweight; the website's
 ### Buy them all bundle
 
 - One tee, one hoodie, one sticker and one poster with the same design.
-- 10% off the total of those four items.
+- 10% off everything in the order once those four are in the cart: extra Design Your Pet items and other store products too (Wix automatic discount "Design Your Pet: Buy Them All 10% Off", widened 27 Oct 2026).
 - The discount is an automatic discount set up in the Wix store (Marketing),
   triggered by the purchase conditions. The app does not calculate or apply it;
   it only displays it once Wix has applied it to the cart. No coupon code field

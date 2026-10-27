@@ -38,8 +38,9 @@ export type CartTotals = {
 
 // Matches the "Buy Them All" rule in Wix: once the cart holds at least one
 // tee, hoodie, sticker and poster (any designs, added one by one or as a
-// bundle), every Design Your Pet item in the cart is 10% off, extra ones
-// included. Wix applies the real discount at checkout; this is the estimate.
+// bundle), everything in the order is 10% off, extras and other store
+// products included (Don's decision, 27 Oct 2026). Wix applies the real
+// discount at checkout; this is the estimate.
 export function cartTotals(items: CartItem[]): CartTotals {
   let itemCount = 0;
   let itemsCents = 0;
