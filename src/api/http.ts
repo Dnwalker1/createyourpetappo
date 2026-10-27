@@ -254,5 +254,9 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
       const body = await call(deviceId, '/orders');
       return ((body.orders as Json[]) ?? []).map(toOrder);
     },
+
+    async reportDesign(deviceId, designId, reason) {
+      await call(deviceId, '/report', post({ designId, reason }));
+    },
   };
 }

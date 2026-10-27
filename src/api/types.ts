@@ -109,4 +109,6 @@ export interface DesignYourPetApi {
   getCheckoutStatus(deviceId: string, checkoutId: string): Promise<{ completed: boolean; orderNumber: string | null }>;
   /** Every order placed from this device, newest first. */
   getOrders(deviceId: string): Promise<Order[]>;
+  /** Reports a design as offensive or wrong; the backend holds it for review and emails the owner. */
+  reportDesign(deviceId: string, designId: string, reason: string): Promise<void>;
 }

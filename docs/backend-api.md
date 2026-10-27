@@ -49,6 +49,7 @@ statuses: 400 `device_missing`, 401 `bad_app_key`, 500 `server_error`.
 | POST `/checkout` | `{ items:[{designId,productKey,color?,size,quantity}] }` | `{ checkoutId, checkoutUrl, summary }` |
 | GET `/checkout/<checkoutId>` | – | `{ completed, orderNumber }` |
 | GET `/orders` | – | `{ orders:[{orderNumber,placedAt,total,stage,stages,trackingUrl,items}] }` |
+| POST `/report` | `{designId, reason}` (`offensive`, `person` or `other`) | `{ ok:true }`. Holds the design for review (status `flagged`) and emails Don via the `flagged-pet-design` triggered email. Google Play AI-content requirement. |
 
 `allowance` = `{ designsUsed, designsLeft, designsLimit: 5, designUnlockAt,
 triesUsed, triesLeft, triesLimit: 12, tryUnlockAt }`. The app reads

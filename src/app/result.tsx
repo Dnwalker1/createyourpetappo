@@ -5,6 +5,7 @@ import { Body, Button, Screen, StepHeader } from '../components/ui';
 import { BundleCard } from '../components/BundleCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { ProductPreview } from '../components/ProductPreview';
+import { ReportDesign } from '../components/ReportDesign';
 import { DEFAULT_CHOICES, PRODUCT_ORDER, PRODUCTS, priceRange, styleById } from '../data/catalog';
 import { formatRange } from '../lib/money';
 import { useLimits } from '../lib/useLimits';
@@ -12,7 +13,7 @@ import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 export default function Result() {
-  const { activeDesign, photo, setPhoto } = useAppState();
+  const { activeDesign, photo, setPhoto, deviceId } = useAppState();
   const { line } = useLimits();
   const [viewing, setViewing] = useState(false);
 
@@ -76,6 +77,7 @@ export default function Result() {
         ))}
       </View>
       <BundleCard />
+      <ReportDesign deviceId={deviceId} designId={activeDesign.id} />
     </Screen>
   );
 }

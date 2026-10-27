@@ -118,5 +118,9 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
     async getOrders() {
       return [...orders.values()].sort((a, b) => b.createdAt - a.createdAt);
     },
+
+    async reportDesign() {
+      // Nothing to hold or email in the mock.
+    },
   };
 }
