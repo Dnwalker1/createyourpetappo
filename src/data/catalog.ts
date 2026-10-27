@@ -1,7 +1,8 @@
 import type { ImageSourcePropType } from 'react-native';
 
 // Styles, products and prices. Prices are Printful retail prices in cents.
-// Source: docs/app-spec.md > Styles, Products and prices.
+// Source: the live Wix store variant prices (updated 27 Oct 2026). Keep in step
+// with Wix: Wix charges its own prices at checkout, these are what the app shows.
 
 export type StyleId = 'stamp' | 'poster' | 'evening' | 'sticker';
 
@@ -82,7 +83,7 @@ export const PRODUCTS: Record<ProductId, Product> = {
       { name: 'Heather Dust', hex: '#E2D9D0', mockup: require('../../assets/images/mockups/tee-heather-dust.webp') },
       { name: 'Athletic Heather', hex: '#C4C5C0', mockup: require('../../assets/images/mockups/tee-athletic-heather.webp') },
     ],
-    priceCents: { S: 2400, M: 2400, L: 2400, XL: 2400, '2XL': 2650, '3XL': 2900 },
+    priceCents: { S: 2600, M: 2600, L: 2600, XL: 2600, '2XL': 2850, '3XL': 3100 },
   },
   hoodie: {
     id: 'hoodie',
@@ -101,7 +102,7 @@ export const PRODUCTS: Record<ProductId, Product> = {
       { name: 'Sky Blue', hex: '#C8DCE5', mockup: require('../../assets/images/mockups/hoodie-sky-blue.webp') },
       { name: 'White', hex: '#FFFFFF', mockup: require('../../assets/images/mockups/hoodie-white.webp') },
     ],
-    priceCents: { S: 5450, M: 5450, L: 5450, XL: 5450, '2XL': 5700, '3XL': 5950 },
+    priceCents: { S: 5550, M: 5550, L: 5550, XL: 5550, '2XL': 5800, '3XL': 6050 },
   },
   sticker: {
     id: 'sticker',
@@ -110,9 +111,9 @@ export const PRODUCTS: Record<ProductId, Product> = {
     printfulItem: 'Kiss-cut, bubble-free sticker',
     description: 'Kiss-cut, bubble-free sticker of your design.',
     sizes: [
-      { id: '3x3', label: '3″ × 3″', priceCents: 1050 },
-      { id: '4x4', label: '4″ × 4″', priceCents: 1050 },
-      { id: '5.5x5.5', label: '5.5″ × 5.5″', priceCents: 1100 },
+      { id: '3x3', label: '3″ × 3″', priceCents: 1150 },
+      { id: '4x4', label: '4″ × 4″', priceCents: 1150 },
+      { id: '5.5x5.5', label: '5.5″ × 5.5″', priceCents: 1200 },
     ],
   },
   poster: {
@@ -122,9 +123,9 @@ export const PRODUCTS: Record<ProductId, Product> = {
     printfulItem: 'Matte paper poster',
     description: 'Square matte paper poster of your design.',
     sizes: [
-      { id: '12x12', label: '12″ × 12″', priceCents: 2200 },
-      { id: '16x16', label: '16″ × 16″', priceCents: 2650 },
-      { id: '18x18', label: '18″ × 18″', priceCents: 2750 },
+      { id: '12x12', label: '12″ × 12″', priceCents: 2400 },
+      { id: '16x16', label: '16″ × 16″', priceCents: 2850 },
+      { id: '18x18', label: '18″ × 18″', priceCents: 2950 },
     ],
   },
 };

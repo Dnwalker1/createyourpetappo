@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Body, Button, H1, Pill, Row, Screen } from '../components/ui';
 import { STYLES } from '../data/catalog';
+import { fonts } from '../theme';
 
 const badge = require('../../assets/images/brand/badge-logo.webp');
 
@@ -28,6 +29,12 @@ export default function Welcome() {
         Put Your Best Friend On A Shirt
       </H1>
       <Body tone="dark">Upload a photo. Pick a style. We&apos;ll turn your pet into original Goodwookie artwork and put it on a shirt. Your pet doesn&apos;t have to sit still for any of it.</Body>
+      <Body tone="dark">
+        Buy them all and save 10% on everything. Get the tee, hoodie, sticker and poster with your designs, and the rest of your order is 10% off too.
+      </Body>
+      <Body tone="dark" style={styles.shipping}>
+        Shipping is always free.
+      </Body>
       <Row style={{ flexWrap: 'wrap', gap: 8 }}>
         <Pill tone="dark">About 1 minute</Pill>
         <Pill tone="dark">5 free designs every 24 hours</Pill>
@@ -39,6 +46,7 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   badge: { width: 200, height: 182, alignSelf: 'center' },
+  shipping: { fontFamily: fonts.bodyBold, textTransform: 'uppercase', letterSpacing: 0.5 },
   collage: { height: 190, alignItems: 'center', justifyContent: 'center' },
   sample: { position: 'absolute' },
   left: { width: 112, height: 112, left: '8%', top: 6, transform: [{ rotate: '-6deg' }] },

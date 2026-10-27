@@ -79,6 +79,15 @@ export default function Cart() {
       )}
 
       {cart.length ? (
+        <Card style={styles.madeToOrder}>
+          <Text style={styles.title}>Made for you, not pulled off a shelf</Text>
+          <Body style={{ fontSize: 14 }}>
+            Everything here is printed after you order it, one piece at a time, just for you. That&apos;s slower than big-store shipping, so allow a week or more for printing and delivery. Shipping is always free.
+          </Body>
+        </Card>
+      ) : null}
+
+      {cart.length ? (
         <View style={styles.summary}>
           <View style={styles.line}>
             <Text style={styles.sumText}>Items</Text>
@@ -110,6 +119,7 @@ export default function Cart() {
 }
 
 const styles = StyleSheet.create({
+  madeToOrder: { gap: 6, backgroundColor: colors.paper },
   count: { fontFamily: fonts.body, fontSize: 15, color: colors.slate },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   single: { flexDirection: 'row', alignItems: 'center' },
