@@ -34,6 +34,9 @@ export default function Checkout() {
   const checking = useRef(false);
   // How checkout was opened, which decides how the way back is explained.
   const [openedIn, setOpenedIn] = useState<'tab' | 'browser'>('tab');
+  // Set when the customer came back and no payment was found, so the screen
+  // says so plainly instead of waiting on "I've paid".
+  const [notPaid, setNotPaid] = useState(false);
   const totals = cartTotals(cart);
 
   // Paid? The order can take a moment to appear, so ask a few times.
@@ -54,7 +57,8 @@ export default function Checkout() {
           }
           await wait(1500);
         }
-        // Not paid (yet): nothing changes, the cart is kept.
+        // Not paid (yet): the cart is kept, and the screen says so.
+        setNotPaid(true);
       } finally {
         checking.current = false;
         setBusy(false);
@@ -77,6 +81,7 @@ export default function Checkout() {
     if (!deviceId || !cart.length) return;
     setBusy(true);
     setFailed(false);
+    setNotPaid(false);
     try {
       const lines: CheckoutLine[] = cart.map((i) =>
         i.kind === 'bundle'
@@ -126,7 +131,12 @@ export default function Checkout() {
     <Screen
       footer={
         <>
-          {pendingId ? (
+          {pendingId && notPaid ? (
+            <>
+              <Button title={busy ? 'Opening checkout…' : 'Open checkout again'} disabled={busy} onPress={pay} />
+              <Button variant="link" title={busy ? 'Checking your order…' : "I've paid, check again"} disabled={busy} onPress={() => confirm(pendingId)} />
+            </>
+          ) : pendingId ? (
             <>
               <Button title={busy ? 'Checking your order…' : "I've paid, check my order"} disabled={busy} onPress={() => confirm(pendingId)} />
               <Button variant="link" title="Open checkout again" disabled={busy} onPress={pay} />
@@ -135,7 +145,9 @@ export default function Checkout() {
             <Button title={busy ? 'Opening checkout…' : 'Continue to secure checkout'} disabled={busy || !cart.length} onPress={pay} />
           )}
           <Body style={{ textAlign: 'center', fontSize: 13 }}>
-            {pendingId
+            {pendingId && notPaid
+              ? 'Nothing has been charged. Your cart is still here.'
+              : pendingId
               ? openedIn === 'tab'
                 ? 'Finished paying? Tap \u2715 at the top of the checkout page to come back here, and your order shows up. Your cart is kept until the payment goes through.'
                 : 'Finished paying? Switch back to this app (use your phone\u2019s app switcher) and your order shows up. Your cart is kept until the payment goes through.'
@@ -189,6 +201,13 @@ export default function Checkout() {
         </View>
         <Body style={{ fontSize: 14 }}>The options you see depend on your phone. You&apos;ll enter your shipping address on the next screen.</Body>
       </View>
+      {pendingId && notPaid && !busy ? (
+        <Alert title="No payment yet">
+          <Body>
+            We didn&apos;t find a payment for this order, so nothing has been charged. If you closed the checkout page before paying, or it said your cart was empty, tap Open checkout again.
+          </Body>
+        </Alert>
+      ) : null}
       {failed === 'unavailable' ? (
         <Alert title="Something in your cart has changed">
           <Body>

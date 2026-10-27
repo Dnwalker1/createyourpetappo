@@ -38,8 +38,24 @@ describe('bundle pricing', () => {
     const t = cartTotals(items);
     expect(t.itemCount).toBe(5);
     expect(formatMoney(t.itemsCents)).toBe('$139.50');
-    expect(formatMoney(t.bundleDiscountCents)).toBe('$11.55');
-    expect(formatMoney(t.totalCents)).toBe('$127.95');
+    // Wix's rule discounts every Design Your Pet item once all four are in the cart.
+    expect(formatMoney(t.bundleDiscountCents)).toBe('$13.95');
+    expect(formatMoney(t.totalCents)).toBe('$125.55');
+  });
+
+  it('discounts four items added one at a time, like Wix does', () => {
+    const singles: CartItem[] = [
+      { ...base, id: 't', kind: 'single', choice: { product: 'tee', color: 'Athletic Heather', size: 'XL' }, quantity: 1 },
+      { ...base, id: 'h', kind: 'single', choice: { product: 'hoodie', color: 'Sky Blue', size: 'XL' }, quantity: 1 },
+      { ...base, id: 'p', kind: 'single', choice: { product: 'poster', size: '18x18' }, quantity: 1 },
+      { ...base, id: 's', kind: 'single', choice: { product: 'sticker', size: '5.5x5.5' }, quantity: 1 },
+    ];
+    const t = cartTotals(singles);
+    expect(formatMoney(t.itemsCents)).toBe('$117.00');
+    expect(formatMoney(t.bundleDiscountCents)).toBe('$11.70');
+    expect(formatMoney(t.totalCents)).toBe('$105.30');
+    // Three of the four: no discount.
+    expect(cartTotals(singles.slice(0, 3)).bundleDiscountCents).toBe(0);
   });
 
   it('does not discount single items', () => {

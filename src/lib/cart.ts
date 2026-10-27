@@ -36,18 +36,25 @@ export type CartTotals = {
   totalCents: number;
 };
 
+// Matches the "Buy Them All" rule in Wix: once the cart holds at least one
+// tee, hoodie, sticker and poster (any designs, added one by one or as a
+// bundle), every Design Your Pet item in the cart is 10% off, extra ones
+// included. Wix applies the real discount at checkout; this is the estimate.
 export function cartTotals(items: CartItem[]): CartTotals {
   let itemCount = 0;
   let itemsCents = 0;
-  let bundleDiscountCents = 0;
+  const kinds = new Set<string>();
   for (const item of items) {
     itemsCents += itemCents(item);
     if (item.kind === 'bundle') {
       itemCount += 4;
-      bundleDiscountCents += discountCents(bundleItemsCents(item.choices), BUNDLE_DISCOUNT);
+      ['tee', 'hoodie', 'sticker', 'poster'].forEach((k) => kinds.add(k));
     } else {
       itemCount += item.quantity;
+      kinds.add(item.choice.product);
     }
   }
+  const qualifies = ['tee', 'hoodie', 'sticker', 'poster'].every((k) => kinds.has(k));
+  const bundleDiscountCents = qualifies ? discountCents(itemsCents, BUNDLE_DISCOUNT) : 0;
   return { itemCount, itemsCents, bundleDiscountCents, totalCents: itemsCents - bundleDiscountCents };
 }
