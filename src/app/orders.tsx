@@ -9,6 +9,7 @@ import { BottomNav } from '../components/BottomNav';
 import { Body, Button, Card } from '../components/ui';
 import { formatMoney } from '../lib/money';
 import { useAppState } from '../state/AppState';
+import { PolicyLinks } from '../components/PolicyLinks';
 import { colors, fonts } from '../theme';
 
 const pawNavy = require('../../assets/images/brand/paw-navy-icon.webp');
@@ -125,6 +126,7 @@ export default function Orders() {
           </Text>
           .
         </Body>
+        <PolicyLinks />
       </ScrollView>
       <BottomNav current="orders" />
     </SafeAreaView>

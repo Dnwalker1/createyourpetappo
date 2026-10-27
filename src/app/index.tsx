@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Body, Button, H1, Pill, Row, Screen } from '../components/ui';
+import { PolicyLinks } from '../components/PolicyLinks';
 import { STYLES } from '../data/catalog';
 import { fonts } from '../theme';
 
@@ -40,6 +41,7 @@ export default function Welcome() {
         <Pill tone="dark">5 free designs every 24 hours</Pill>
         <Pill tone="dark">No account. No password to forget.</Pill>
       </Row>
+      <PolicyLinks tone="dark" />
     </Screen>
   );
 }
