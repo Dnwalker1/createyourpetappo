@@ -288,7 +288,7 @@ before submitting. If the app supports iPad, Apple also needs iPad screenshots.
 > printed until you order it.
 >
 > Buy them all: get the tee, hoodie, sticker and poster with the same design and
-> save 10%.
+> save 10%. The discount covers everything else in that order, too.
 >
 > Every order is reviewed by hand before it's printed. Printed on demand and
 > shipped free.
