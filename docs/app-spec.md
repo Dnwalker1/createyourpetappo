@@ -282,7 +282,7 @@ before submitting. If the app supports iPad, Apple also needs iPad screenshots.
 > going to name. Two or three pets in one photo works too.
 >
 > Want to be in it with them? Switch on "Include the people in my photo" and
-> the adults in your photo are drawn right alongside your pets.
+> everyone in it, 13 and over, is drawn right alongside your pets.
 >
 > Five free designs every 24 hours. No account, no card, and nothing gets
 > printed until you order it.
