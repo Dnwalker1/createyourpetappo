@@ -8,7 +8,7 @@ alfa=lambda s: ImageFont.truetype(F+'alfa-slab-one/400Regular/AlfaSlabOne_400Reg
 bar=lambda s: ImageFont.truetype(F+'barlow/500Medium/Barlow_500Medium.ttf',s)
 W,H=3840,1646
 g=Image.new('RGBA',(W,H),NAVY+(255,))
-glow=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(glow).ellipse((1950,150,3350,1550),fill=GOLD+(60,))
+glow=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(glow).ellipse((2050,300,3250,1350),fill=GOLD+(60,))
 g.alpha_composite(glow.filter(ImageFilter.GaussianBlur(220)))
 def card(path,size,angle):
     im=Image.open(path).convert('RGBA').resize((size,size),Image.LANCZOS).filter(ImageFilter.UnsharpMask(2,60,2))
@@ -21,18 +21,21 @@ def card(path,size,angle):
     sh=sh.filter(ImageFilter.GaussianBlur(28)); sh.alpha_composite(c,(70,70))
     return sh.rotate(angle,resample=Image.BICUBIC,expand=True)
 st=R+'/assets/images/styles/'
-S=540
-for f,a,(x,y) in [('travel-stamp.png',7,(2060,200)),('evening-portrait.png',-6,(2700,170)),
-                  ('adventure-sticker.png',-5,(2030,850)),('travel-poster.png',6,(2680,830))]:
+# Apple overlays buttons in the top corners and crops top and bottom on some
+# devices (iPad landscape), so everything sits in a middle band, y 440-1230,
+# x 620-3220.
+S=330
+for f,a,(x,y) in [('travel-stamp.png',6,(2260,450)),('evening-portrait.png',-5,(2690,430)),
+                  ('adventure-sticker.png',-4,(2240,850)),('travel-poster.png',5,(2680,840))]:
     c=card(st+f,S,a); g.alpha_composite(c,(x-70,y-70))
 d=ImageDraw.Draw(g)
-paw=Image.open(R+'/assets/images/brand/paw-sunset-icon.webp').convert('RGBA').resize((250,250),Image.LANCZOS)
-X=520
-g.alpha_composite(paw,(X,300))
-d.text((X+290,330),'GOODWOOKIE',font=osw(84),fill=GOLD)
-d.text((X+290,440),'DESIGN YOUR PET',font=osw(62),fill=AGED)
-d.text((X,640),'Your pet,',font=alfa(170),fill=CREAM)
-d.text((X,850),'as art.',font=alfa(170),fill=CREAM)
-d.text((X+6,1110),'One photo. Four styles.',font=bar(78),fill=CREAM)
-d.text((X+6,1220),'On a tee, hoodie, sticker or poster.',font=bar(66),fill=AGED)
+paw=Image.open(R+'/assets/images/brand/paw-sunset-icon.webp').convert('RGBA').resize((120,120),Image.LANCZOS)
+X=640
+g.alpha_composite(paw,(X,470))
+d.text((X+140,478),'GOODWOOKIE',font=osw(52),fill=GOLD)
+d.text((X+140,540),'DESIGN YOUR PET',font=osw(38),fill=AGED)
+d.text((X,640),'Your pet,',font=alfa(128),fill=CREAM)
+d.text((X,800),'as art.',font=alfa(128),fill=CREAM)
+d.text((X+4,1000),'One photo. Four styles.',font=bar(60),fill=CREAM)
+d.text((X+4,1085),'On a tee, hoodie, sticker or poster.',font=bar(50),fill=AGED)
 g.convert('RGB').save(OUT)
