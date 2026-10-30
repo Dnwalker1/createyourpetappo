@@ -38,12 +38,14 @@ statuses: 400 `device_missing`, 401 `bad_app_key`, 500 `server_error`.
 | Method + path | Body | Success returns |
 |---|---|---|
 | GET `/ping` | – | `{ ok, time }` |
-| GET `/products` | – | products, styles, `maxTextLength: 18`; tee and hoodie also carry `printSides` and `backPrices` once the Wix "Print" option exists |
+| GET `/products` | – | products, styles, `maxTextLength: 18`; tee and hoodie also carry `printSides` and `backPrices` when their back-print products exist |
 
 `print` is `"Front"` (the default when it's left out) or `"Back"`, tee and
 hoodie only. Back = the design on the back and the script logo on the left
-chest instead of the sleeve; Wix charges $5 more on the tee and $7 more on the
-hoodie through its "Print: Back" variants.
+chest instead of the sleeve. A back print is sold as its own Wix product
+("Design Your Pet Tee - Back Print", "Design Your Pet Hoodie - Back Print"),
+$5 more on the tee and $7 more on the hoodie, because Printful's store sync
+locks the options on the original products.
 | GET `/allowance` | – | `{ allowance }` |
 | POST `/uploadUrl` | `{ mimeType }` (jpeg/png/heic/heif/webp) | `{ uploadUrl }`. The limits are checked first. |
 | POST `/designs` | `{ fileId, style, text?, includePeople?, peopleConsent? }` | `{ designId, style }` |
