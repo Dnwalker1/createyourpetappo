@@ -1,6 +1,6 @@
 import { BundleChoices, CartItem, bundleItemsCents, cartTotals } from './cart';
 import { formatMoney, formatRange } from './money';
-import { priceRange } from '../data/catalog';
+import { describeChoice, priceCents, priceRange } from '../data/catalog';
 
 const cheapest: BundleChoices = {
   tee: { product: 'tee', color: 'White', size: 'M' },
@@ -72,5 +72,19 @@ describe('price ranges', () => {
     expect(formatRange(priceRange('hoodie'))).toBe('$55.50–$60.50');
     expect(formatRange(priceRange('sticker'))).toBe('$11.50–$12');
     expect(formatRange(priceRange('poster'))).toBe('$24–$29.50');
+  });
+});
+
+describe('back print', () => {
+  it('adds $5 to a tee and $7 to a hoodie', () => {
+    expect(priceCents({ product: 'tee', color: 'White', size: 'L', print: 'Back' })).toBe(3100);
+    expect(priceCents({ product: 'tee', color: 'White', size: '3XL', print: 'Back' })).toBe(3600);
+    expect(priceCents({ product: 'hoodie', color: 'Bone', size: 'L', print: 'Back' })).toBe(6250);
+    expect(priceCents({ product: 'tee', color: 'White', size: 'L', print: 'Front' })).toBe(2600);
+    expect(priceCents({ product: 'tee', color: 'White', size: 'L' })).toBe(2600);
+  });
+  it('names the back print in the cart line', () => {
+    expect(describeChoice({ product: 'hoodie', color: 'Bone', size: 'L', print: 'Back' })).toBe('Hoodie · Bone · L · Back print');
+    expect(describeChoice({ product: 'hoodie', color: 'Bone', size: 'L' })).toBe('Hoodie · Bone · L');
   });
 });

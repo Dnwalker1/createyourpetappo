@@ -44,6 +44,14 @@ export type ApparelSize = 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL';
 export const APPAREL_SIZES: ApparelSize[] = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
 
 export type ProductColor = { name: string; hex: string; mockup: ImageSourcePropType };
+
+/**
+ * Where the design prints on a tee or hoodie. Front: the design on the chest
+ * and the script logo on the left sleeve. Back: the design on the back and the
+ * script logo on the left chest. Names match the Wix "Print" option.
+ */
+export type PrintSide = 'Front' | 'Back';
+export const PRINT_SIDES: PrintSide[] = ['Front', 'Back'];
 export type FlatSize = { id: string; label: string; priceCents: number };
 
 type ApparelProduct = {
@@ -54,6 +62,8 @@ type ApparelProduct = {
   description: string;
   colors: ProductColor[];
   priceCents: Record<ApparelSize, number>;
+  /** What a back print adds to every size (Wix "Print: Back" variants). */
+  backExtraCents: number;
 };
 
 type FlatProduct = {
@@ -68,6 +78,7 @@ type FlatProduct = {
 export type Product = ApparelProduct | FlatProduct;
 
 const SLEEVE = 'Goodwookie script logo on the left sleeve.';
+const CHEST = 'Your design on the back, Goodwookie script logo on the left chest.';
 
 export const PRODUCTS: Record<ProductId, Product> = {
   tee: {
@@ -84,6 +95,7 @@ export const PRODUCTS: Record<ProductId, Product> = {
       { name: 'Athletic Heather', hex: '#C4C5C0', mockup: require('../../assets/images/mockups/tee-athletic-heather.webp') },
     ],
     priceCents: { S: 2600, M: 2600, L: 2600, XL: 2600, '2XL': 2850, '3XL': 3100 },
+    backExtraCents: 500,
   },
   hoodie: {
     id: 'hoodie',
@@ -103,6 +115,7 @@ export const PRODUCTS: Record<ProductId, Product> = {
       { name: 'White', hex: '#FFFFFF', mockup: require('../../assets/images/mockups/hoodie-white.webp') },
     ],
     priceCents: { S: 5550, M: 5550, L: 5550, XL: 5550, '2XL': 5800, '3XL': 6050 },
+    backExtraCents: 700,
   },
   sticker: {
     id: 'sticker',
@@ -138,13 +151,14 @@ export const BUNDLE_DISCOUNT = 0.1;
 
 // What a customer picks for one product.
 export type ProductChoice =
-  | { product: 'tee' | 'hoodie'; color: string; size: ApparelSize }
+  | { product: 'tee' | 'hoodie'; color: string; size: ApparelSize; print?: PrintSide }
   | { product: 'sticker' | 'poster'; size: string };
 
 export function priceCents(choice: ProductChoice): number {
   const product = PRODUCTS[choice.product];
   if (product.kind === 'apparel') {
-    return product.priceCents[choice.size as ApparelSize];
+    const back = 'print' in choice && choice.print === 'Back' ? product.backExtraCents : 0;
+    return product.priceCents[choice.size as ApparelSize] + back;
   }
   const size = product.sizes.find((s) => s.id === choice.size);
   if (!size) throw new Error(`Unknown size ${choice.size} for ${choice.product}`);
@@ -165,10 +179,19 @@ export function colorFor(product: 'tee' | 'hoodie', name: string): ProductColor 
 export function describeChoice(choice: ProductChoice): string {
   const product = PRODUCTS[choice.product];
   if (choice.product === 'tee' || choice.product === 'hoodie') {
-    return `${product.name} · ${choice.color} · ${choice.size}`;
+    return `${product.name} · ${choice.color} · ${choice.size}${choice.print === 'Back' ? ' · Back print' : ''}`;
   }
   const size = (product as FlatProduct).sizes.find((s) => s.id === choice.size);
   return `${product.name} · ${size?.label ?? choice.size}`;
+}
+
+/** The product description, worded for where the design prints. */
+export function productDescription(choice: ProductChoice): string {
+  const product = PRODUCTS[choice.product];
+  if ((choice.product === 'tee' || choice.product === 'hoodie') && choice.print === 'Back') {
+    return product.description.replace(SLEEVE, CHEST);
+  }
+  return product.description;
 }
 
 export const DEFAULT_CHOICES: Record<ProductId, ProductChoice> = {

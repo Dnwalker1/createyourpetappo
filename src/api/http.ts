@@ -236,6 +236,7 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
             designId: line.designId,
             productKey: choice.product,
             ...('color' in choice ? { color: choice.color } : {}),
+            ...('print' in choice && choice.print === 'Back' ? { print: 'Back' } : {}),
             size: backendSize(choice),
             quantity,
           }),
@@ -253,6 +254,31 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
     async getOrders(deviceId) {
       const body = await call(deviceId, '/orders');
       return ((body.orders as Json[]) ?? []).map(toOrder);
+    },
+
+    async backMockup(deviceId, designId, choice) {
+      if (choice.product !== 'tee' && choice.product !== 'hoodie') return null;
+      try {
+        const { taskKey } = await call(
+          deviceId,
+          '/mockups',
+          post({ designId, productKey: choice.product, color: choice.color, size: choice.size, print: 'Back' }),
+        );
+        // Printful usually takes 10 to 30 seconds. Give up after a minute.
+        for (let i = 0; i < 24; i++) {
+          await wait(2500);
+          const body = await call(deviceId, `/mockups/${encodeURIComponent(String(taskKey))}`);
+          if (body.status === 'failed') return null;
+          if (body.status === 'ready') {
+            const mockups = (body.mockups as Json[] | undefined) ?? [];
+            const back = mockups.find((m) => String(m.placement).toLowerCase() === 'back');
+            return String(back?.url ?? body.mockupUrl ?? '') || null;
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
     },
 
     async reportDesign(deviceId, designId, reason) {

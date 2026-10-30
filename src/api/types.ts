@@ -109,6 +109,12 @@ export interface DesignYourPetApi {
   getCheckoutStatus(deviceId: string, checkoutId: string): Promise<{ completed: boolean; orderNumber: string | null }>;
   /** Every order placed from this device, newest first. */
   getOrders(deviceId: string): Promise<Order[]>;
+  /**
+   * A photo of the design printed on the BACK of a tee or hoodie, made by
+   * Printful from the watermarked preview. Takes 10 to 30 seconds. Resolves
+   * null when no picture could be made; the app then shows its own preview.
+   */
+  backMockup(deviceId: string, designId: string, choice: ProductChoice): Promise<string | null>;
   /** Reports a design as offensive or wrong; the backend holds it for review and emails the owner. */
   reportDesign(deviceId: string, designId: string, reason: string): Promise<void>;
 }

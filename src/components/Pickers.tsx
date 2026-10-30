@@ -49,7 +49,7 @@ export function SizePicker({ choice, onChange }: { choice: ProductChoice; onChan
             onPress={() =>
               onChange(
                 choice.product === 'tee' || choice.product === 'hoodie'
-                  ? { product: choice.product, color: choice.color, size: o.id as ApparelSize }
+                  ? { ...choice, size: o.id as ApparelSize }
                   : { product: choice.product, size: o.id },
               )
             }

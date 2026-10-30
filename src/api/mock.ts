@@ -119,6 +119,11 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
       return [...orders.values()].sort((a, b) => b.createdAt - a.createdAt);
     },
 
+    async backMockup() {
+      // No Printful in the mock. The app falls back to its own preview.
+      return null;
+    },
+
     async reportDesign() {
       // Nothing to hold or email in the mock.
     },

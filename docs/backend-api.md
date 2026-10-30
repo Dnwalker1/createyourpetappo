@@ -38,15 +38,20 @@ statuses: 400 `device_missing`, 401 `bad_app_key`, 500 `server_error`.
 | Method + path | Body | Success returns |
 |---|---|---|
 | GET `/ping` | – | `{ ok, time }` |
-| GET `/products` | – | products, styles, `maxTextLength: 18` |
+| GET `/products` | – | products, styles, `maxTextLength: 18`; tee and hoodie also carry `printSides` and `backPrices` once the Wix "Print" option exists |
+
+`print` is `"Front"` (the default when it's left out) or `"Back"`, tee and
+hoodie only. Back = the design on the back and the script logo on the left
+chest instead of the sleeve; Wix charges $5 more on the tee and $7 more on the
+hoodie through its "Print: Back" variants.
 | GET `/allowance` | – | `{ allowance }` |
 | POST `/uploadUrl` | `{ mimeType }` (jpeg/png/heic/heif/webp) | `{ uploadUrl }`. The limits are checked first. |
 | POST `/designs` | `{ fileId, style, text?, includePeople?, peopleConsent? }` | `{ designId, style }` |
 | GET `/designs` | – | `{ designs:[{designId,style,text,previewUrl,createdAt,expiresAt}], inProgressDesignId, allowance }` |
 | GET `/designs/<designId>` | – | `{ designId, status, reason, includePeople, style, text, previewUrl, allowance? }` |
-| POST `/mockups` | `{ designId, productKey, color?, size }` | `{ taskKey }` (the app doesn't use this; it draws its own previews) |
-| GET `/mockups/<taskKey>` | – | `{ status, mockupUrl, mockupUrls }` |
-| POST `/checkout` | `{ items:[{designId,productKey,color?,size,quantity}] }` | `{ checkoutId, checkoutUrl, summary }` |
+| POST `/mockups` | `{ designId, productKey, color?, size, print? }` | `{ taskKey }` (the app uses this only for back-print previews; it draws front previews itself) |
+| GET `/mockups/<taskKey>` | – | `{ status, mockupUrl, mockupUrls, mockups:[{placement,url}] }` |
+| POST `/checkout` | `{ items:[{designId,productKey,color?,size,print?,quantity}] }` | `{ checkoutId, checkoutUrl, summary }` |
 | GET `/checkout/<checkoutId>` | – | `{ completed, orderNumber }` |
 | GET `/orders` | – | `{ orders:[{orderNumber,placedAt,total,stage,stages,trackingUrl,items}] }` |
 | POST `/report` | `{designId, reason}` (`offensive`, `person` or `other`) | `{ ok:true }`. Holds the design for review (status `flagged`) and emails Don via the `flagged-pet-design` triggered email. Google Play AI-content requirement. |
