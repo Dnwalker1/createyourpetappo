@@ -22,7 +22,7 @@ the live Wix backend provides are in `docs/backend-api.md`.
 |---|---|---|---|
 | 1 | Welcome | `Main.dc.html` | Badge logo, sample designs, "Get started". |
 | 2 | Step 1: Add your photo | `Upload.dc.html` | Take or choose a photo; photo tips; confirm "I own this photo and everyone in it is 13 or older." |
-| 3 | Steps 2–3: Style and text | `Style.dc.html` | Pick one of four styles. Optional text, up to 18 characters, only for Travel Stamp and Travel Poster. "Include the people in my photo" switch, off by default; when on, Generate needs the adults-and-consent checkbox. |
+| 3 | Steps 2–3: Style and text | `Style.dc.html` | Pick one of six styles. Optional text, up to 18 characters, only for Travel Stamp and Travel Poster. On the Job instead shows a job picker (12 titles, matching JOB_TITLES on the website); the title goes on the banner, and several pets become one crew. Pencil Sketch takes no text. "Include the people in my photo" switch, off by default; when on, Generate needs the adults-and-consent checkbox. |
 | 4 | Step 4: Generate | `Generating.dc.html` | About a minute. |
 | 5 | Step 5: Pick your product | `Result.dc.html` | Design shown on a tee; "Try another style", "Use a new photo"; product list; bundle card. |
 | 6 | Product options | `Product.dc.html` | Product tabs, colour, size, price per size. |

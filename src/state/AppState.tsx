@@ -23,6 +23,9 @@ type AppState = {
   cart: CartItem[];
   setPhoto: (photo: PhotoInput | null) => void;
   setStyleId: (id: StyleId) => void;
+  /** The On the Job title picked on the style screen ('' when none). */
+  job: string;
+  setJob: (job: string) => void;
   setText: (text: string) => void;
   /** Turning it off also unticks the consent. */
   setIncludePeople: (on: boolean) => void;
@@ -55,6 +58,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [photo, setPhotoState] = useState<PhotoInput | null>(null);
   const [photoId, setPhotoId] = useState<string | null>(null);
   const [styleId, setStyleId] = useState<StyleId>('stamp');
+  const [job, setJob] = useState('');
   const [text, setText] = useState('');
   const [includePeople, setIncludePeopleState] = useState(false);
   const [peopleConsent, setPeopleConsent] = useState(false);
@@ -101,7 +105,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const startDesign = useCallback(async () => {
     if (!deviceId) throw new Error('No device ID');
     const id = await ensureUploaded();
-    const trimmed = text.trim();
+    // On the Job sends the picked job title as its text; the other styles
+    // send the typed name (only the stamp and poster have anywhere to put it).
+    const trimmed = styleId === 'job' ? job : text.trim();
     const { designId } = await api.createDesign(deviceId, {
       photoId: id,
       styleId,
@@ -109,7 +115,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       includePeople: includePeople && peopleConsent,
     });
     return designId;
-  }, [deviceId, ensureUploaded, styleId, text, includePeople, peopleConsent]);
+  }, [deviceId, ensureUploaded, styleId, job, text, includePeople, peopleConsent]);
 
   const value = useMemo<AppState>(
     () => ({
@@ -124,6 +130,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       cart,
       setPhoto,
       setStyleId,
+      job,
+      setJob,
       setText,
       setIncludePeople,
       setPeopleConsent,
@@ -138,7 +146,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeFromCart: (id) => setCart((c) => c.filter((i) => i.id !== id)),
       clearCart: () => setCart([]),
     }),
-    [ready, deviceId, photo, styleId, text, includePeople, peopleConsent, activeDesign, cart, setPhoto, setIncludePeople, ensureUploaded, startDesign],
+    [ready, deviceId, photo, styleId, job, text, includePeople, peopleConsent, activeDesign, cart, setPhoto, setIncludePeople, ensureUploaded, startDesign],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

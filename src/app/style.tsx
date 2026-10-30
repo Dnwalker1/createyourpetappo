@@ -4,18 +4,19 @@ import { useRef, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../api';
 import { Alert, Body, Button, Checkbox, H1, Screen, StepHeader } from '../components/ui';
-import { MAX_TEXT_LENGTH, STYLES, styleById } from '../data/catalog';
+import { JOB_TITLES, MAX_TEXT_LENGTH, STYLES, jobLabel, styleById } from '../data/catalog';
 import { problemRoute } from '../lib/errorRoute';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 export default function Style() {
-  const { photo, styleId, setStyleId, text, setText, includePeople, setIncludePeople, peopleConsent, setPeopleConsent, startDesign } = useAppState();
+  const { photo, styleId, setStyleId, job, setJob, text, setText, includePeople, setIncludePeople, peopleConsent, setPeopleConsent, startDesign } = useAppState();
   const [busy, setBusy] = useState(false);
   const [textError, setTextError] = useState<string | null>(null);
   const [inProgress, setInProgress] = useState(false);
   const [checkerBusy, setCheckerBusy] = useState(false);
   const style = styleById(styleId);
+  const needsJob = !!style.jobPicker && !job;
   // Where the text field sits on the page, so it can be scrolled above the keyboard.
   const scrollRef = useRef<ScrollView>(null);
   const textY = useRef(0);
@@ -60,7 +61,7 @@ export default function Style() {
       scrollRef={scrollRef}
       footer={
         <>
-          <Button title={busy ? 'Starting…' : 'Generate design'} disabled={busy || !!textError || (includePeople && !peopleConsent)} onPress={generate} />
+          <Button title={busy ? 'Starting…' : 'Generate design'} disabled={busy || !!textError || needsJob || (includePeople && !peopleConsent)} onPress={generate} />
           {textError ? (
             <Button
               variant="link"
@@ -77,7 +78,7 @@ export default function Style() {
       <StepHeader step={3} label="STEPS 2 & 3 OF 5" />
       <View style={{ gap: 6 }}>
         <H1>Choose a style</H1>
-        <Body>Try all four on the same photo. Decide afterward.</Body>
+        <Body>Try them all on the same photo. Decide afterward.</Body>
       </View>
 
       {photo ? (
@@ -109,7 +110,30 @@ export default function Style() {
         })}
       </View>
 
-      {style.allowsText ? (
+      {style.jobPicker ? (
+        <View style={{ gap: 8 }}>
+          <Text nativeID="jobLabel" style={styles.fieldLabel}>
+            Pick your pet&apos;s job
+          </Text>
+          <View style={styles.jobs} accessibilityRole="radiogroup" accessibilityLabelledBy="jobLabel">
+            {JOB_TITLES.map((t) => {
+              const on = t === job;
+              return (
+                <Pressable
+                  key={t}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setJob(t)}
+                  style={[styles.job, on && styles.jobOn]}
+                >
+                  <Text style={[styles.jobText, on && { color: colors.cream }]}>{jobLabel(t)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Body style={{ fontSize: 14 }}>The job title goes on the banner. Several pets in one photo become one crew.</Body>
+        </View>
+      ) : style.allowsText ? (
         <View style={{ gap: 8 }} onLayout={(e) => (textY.current = e.nativeEvent.layout.y)}>
           <View style={styles.labelRow}>
             <Text nativeID="textLabel" style={styles.fieldLabel}>
@@ -144,7 +168,7 @@ export default function Style() {
         </View>
       ) : (
         <View style={styles.note}>
-          <Body style={{ fontSize: 15 }}>Words only fit on the Travel Stamp and the Travel Poster. The other two let the picture do the talking.</Body>
+          <Body style={{ fontSize: 15 }}>Names only fit on the Travel Stamp and the Travel Poster. This style lets the picture do the talking.</Body>
         </View>
       )}
 
@@ -213,4 +237,8 @@ const styles = StyleSheet.create({
   },
   error: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.error },
   note: { padding: 14, borderRadius: 14, backgroundColor: colors.paper },
+  jobs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  job: { minHeight: 44, paddingHorizontal: 14, borderRadius: 12, borderWidth: 2, borderColor: colors.agedCream, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  jobOn: { backgroundColor: colors.navy, borderColor: colors.navy },
+  jobText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.navy },
 });

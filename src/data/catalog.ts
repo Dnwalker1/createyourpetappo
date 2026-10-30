@@ -4,7 +4,7 @@ import type { ImageSourcePropType } from 'react-native';
 // Source: the live Wix store variant prices (updated 27 Oct 2026). Keep in step
 // with Wix: Wix charges its own prices at checkout, these are what the app shows.
 
-export type StyleId = 'stamp' | 'poster' | 'evening' | 'sticker';
+export type StyleId = 'stamp' | 'poster' | 'evening' | 'sticker' | 'job' | 'sketch';
 
 export type DesignStyle = {
   id: StyleId;
@@ -13,6 +13,8 @@ export type DesignStyle = {
   siteKey: string;
   sample: ImageSourcePropType;
   allowsText: boolean;
+  /** On the Job: the customer picks a job title instead of typing a name. */
+  jobPicker?: boolean;
 };
 
 export const MAX_TEXT_LENGTH = 18;
@@ -22,7 +24,34 @@ export const STYLES: DesignStyle[] = [
   { id: 'poster', name: 'Travel Poster', siteKey: 'travelPoster', sample: require('../../assets/images/styles/travel-poster.png'), allowsText: true },
   { id: 'evening', name: 'Evening Portrait', siteKey: 'eveningPortrait', sample: require('../../assets/images/styles/evening-portrait.png'), allowsText: false },
   { id: 'sticker', name: 'Adventure Sticker', siteKey: 'adventureSticker', sample: require('../../assets/images/styles/adventure-sticker.png'), allowsText: false },
+  { id: 'job', name: 'On the Job', siteKey: 'onTheJob', sample: require('../../assets/images/styles/on-the-job.png'), allowsText: false, jobPicker: true },
+  { id: 'sketch', name: 'Pencil Sketch', siteKey: 'pencilSketch', sample: require('../../assets/images/styles/pencil-sketch.png'), allowsText: false },
 ];
+
+/**
+ * On the Job titles. Must match JOB_TITLES in the website's aiDesign.web.js
+ * exactly: the website refuses any title that isn't on its list. The title is
+ * lettered on the design's banner, all capitals.
+ */
+export const JOB_TITLES = [
+  'TRAIL BOSS',
+  'BREAKFAST SUPERVISOR',
+  'CAMPGROUND SECURITY',
+  'SNACK INSPECTOR',
+  'NAP SUPERVISOR',
+  'HEAD CHEF',
+  'CHIEF TASTE TESTER',
+  'RIVER INSPECTOR',
+  'SQUIRREL SURVEILLANCE',
+  'PORCH PATROL',
+  'QUALITY CONTROL',
+  'ROAD TRIP NAVIGATOR',
+] as const;
+
+/** "HEAD CHEF" → "Head Chef", for showing a job title as a choice. */
+export function jobLabel(title: string): string {
+  return title.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 /**
  * The app's style id for whatever the backend sent: the app key ("evening"),

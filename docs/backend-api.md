@@ -78,7 +78,7 @@ in dollars.
 
 ## Styles in answers
 
-Requests send the style key (`stamp`, `poster`, `evening`, `sticker`), but the
+Requests send the style key (`stamp`, `poster`, `evening`, `sticker`, `job`, `sketch`), but the
 live backend answers with the display name (`"style": "Evening Portrait"`).
 The client accepts the key, the display name or the website key
 (`eveningPortrait`) through `styleIdFrom` in `src/data/catalog.ts`. An
