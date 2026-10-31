@@ -131,7 +131,7 @@ export default function Style() {
               );
             })}
           </View>
-          <Body style={{ fontSize: 14 }}>The job title goes on the banner. Several pets in one photo become one crew.</Body>
+          <Body style={{ fontSize: 14 }}>The job title goes on the banner. Several pets in one photo become one crew, and the title goes plural (Head Chefs).</Body>
         </View>
       ) : style.allowsText ? (
         <View style={{ gap: 8 }} onLayout={(e) => (textY.current = e.nativeEvent.layout.y)}>

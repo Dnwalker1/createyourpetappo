@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'react';
 import { AppState, Text, View } from 'react-native';
 import { api } from '../api';
 import { clearPendingCheckout, loadPendingCheckout } from '../lib/pendingCheckout';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppStateProvider, useAppState } from '../state/AppState';
 import { Body, Button, H1 } from '../components/ui';
@@ -104,10 +105,12 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
 export default function RootLayout() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <AppStateProvider>
         <Navigator />
       </AppStateProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

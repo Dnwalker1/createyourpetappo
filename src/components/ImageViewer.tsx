@@ -1,123 +1,120 @@
 import { Image } from 'expo-image';
-import { useState } from 'react';
-import { Animated, Dimensions, ImageSourcePropType, Modal, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageSourcePropType, Modal, Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts } from '../theme';
 
 const MAX_SCALE = 4;
-const DOUBLE_TAP_MS = 280;
-
-type Touch = { pageX: number; pageY: number };
-
-function distance(a: Touch, b: Touch) {
-  return Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
-}
-
-type Transform = { scale: number; x: number; y: number };
-const IDENTITY: Transform = { scale: 1, x: 0, y: 0 };
-
-// Pinch, pan and double-tap handling. Created once per viewer and kept outside
-// React state, since the responder mutates it on every touch move.
-function createZoom() {
-  const scale = new Animated.Value(1);
-  const pan = new Animated.ValueXY();
-  let committed = IDENTITY; // transform when the current gesture began
-  let shown = IDENTITY;
-  let pinchStart = 0;
-  let lastTap = 0;
-
-  const clamp = (t: Transform): Transform => {
-    const { width, height } = Dimensions.get('window');
-    const s = Math.min(MAX_SCALE, Math.max(1, t.scale));
-    const maxX = (width * (s - 1)) / 2;
-    const maxY = (height * (s - 1)) / 2;
-    return { scale: s, x: Math.min(maxX, Math.max(-maxX, t.x)), y: Math.min(maxY, Math.max(-maxY, t.y)) };
-  };
-  const show = (t: Transform, animate = false) => {
-    shown = t;
-    if (animate) {
-      Animated.parallel([
-        Animated.spring(scale, { toValue: t.scale, useNativeDriver: false }),
-        Animated.spring(pan, { toValue: { x: t.x, y: t.y }, useNativeDriver: false }),
-      ]).start();
-    } else {
-      scale.setValue(t.scale);
-      pan.setValue({ x: t.x, y: t.y });
-    }
-  };
-  const commit = () => {
-    committed = clamp(shown);
-    show(committed, true);
-    pinchStart = 0;
-  };
-
-  const responder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: () => {
-      pinchStart = 0;
-    },
-    onPanResponderMove: (e, g) => {
-      const touches = e.nativeEvent.touches;
-      if (touches.length >= 2) {
-        const d = distance(touches[0], touches[1]);
-        if (!pinchStart) {
-          pinchStart = d;
-          committed = shown;
-          return;
-        }
-        const next = Math.min(MAX_SCALE * 1.2, Math.max(0.8, (committed.scale * d) / pinchStart));
-        show({ ...committed, scale: next });
-      } else if (!pinchStart && committed.scale > 1) {
-        show({ scale: committed.scale, x: committed.x + g.dx, y: committed.y + g.dy });
-      }
-    },
-    onPanResponderRelease: (_e, g) => {
-      const moved = Math.abs(g.dx) > 8 || Math.abs(g.dy) > 8;
-      if (!moved && !pinchStart) {
-        const now = Date.now();
-        if (now - lastTap < DOUBLE_TAP_MS) {
-          lastTap = 0;
-          shown = committed.scale > 1 ? IDENTITY : { scale: 2.5, x: 0, y: 0 };
-        } else {
-          lastTap = now;
-        }
-      }
-      commit();
-    },
-    onPanResponderTerminate: commit,
-  });
-
-  const reset = () => {
-    committed = shown = IDENTITY;
-    pinchStart = lastTap = 0;
-    show(IDENTITY);
-  };
-
-  return { scale, pan, panHandlers: responder.panHandlers, reset };
-}
+const DOUBLE_TAP_SCALE = 2.5;
 
 // Full-screen view of a design. Pinch to zoom, drag to pan when zoomed,
-// double-tap to zoom in or reset. Built on PanResponder so it needs no native
-// gesture library.
+// double-tap to zoom in or back out.
+//
+// Built on react-native-gesture-handler and Reanimated (31 Oct 2026). The
+// first version used PanResponder, and its pinch didn't work on a real phone:
+// the responder only follows the first finger reliably, so the second finger's
+// movement never reached it. The gesture library tracks both fingers natively.
+//
+// A Modal is its own native window, so it needs its own GestureHandlerRootView
+// inside it; the one at the app root doesn't reach in here.
 export function ImageViewer({ source, visible, onClose, label }: { source: ImageSourcePropType | null; visible: boolean; onClose: () => void; label: string }) {
-  const [{ scale, pan, panHandlers, reset }] = useState(createZoom);
+  const { width, height } = useWindowDimensions();
+
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const x = useSharedValue(0);
+  const y = useSharedValue(0);
+  const savedX = useSharedValue(0);
+  const savedY = useSharedValue(0);
+
+  // Keep the picture from being dragged off screen at the current zoom.
+  const clampX = (v: number, s: number) => {
+    'worklet';
+    const max = (width * (s - 1)) / 2;
+    return Math.min(max, Math.max(-max, v));
+  };
+  const clampY = (v: number, s: number) => {
+    'worklet';
+    const max = (height * (s - 1)) / 2;
+    return Math.min(max, Math.max(-max, v));
+  };
+  const settle = () => {
+    'worklet';
+    const s = Math.min(MAX_SCALE, Math.max(1, scale.value));
+    scale.value = withTiming(s);
+    x.value = withTiming(clampX(x.value, s));
+    y.value = withTiming(clampY(y.value, s));
+    savedScale.value = s;
+    savedX.value = clampX(x.value, s);
+    savedY.value = clampY(y.value, s);
+  };
+
+  const pinch = Gesture.Pinch()
+    .onStart(() => {
+      savedScale.value = scale.value;
+    })
+    .onUpdate((e) => {
+      scale.value = Math.min(MAX_SCALE * 1.2, Math.max(0.8, savedScale.value * e.scale));
+    })
+    .onEnd(settle);
+
+  const pan = Gesture.Pan()
+    .averageTouches(true)
+    .onStart(() => {
+      savedX.value = x.value;
+      savedY.value = y.value;
+    })
+    .onUpdate((e) => {
+      if (scale.value <= 1) return;
+      x.value = savedX.value + e.translationX;
+      y.value = savedY.value + e.translationY;
+    })
+    .onEnd(settle);
+
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      const zoomIn = scale.value <= 1;
+      const s = zoomIn ? DOUBLE_TAP_SCALE : 1;
+      scale.value = withTiming(s);
+      x.value = withTiming(0);
+      y.value = withTiming(0);
+      savedScale.value = s;
+      savedX.value = 0;
+      savedY.value = 0;
+    });
+
+  const gesture = Gesture.Simultaneous(pinch, pan, doubleTap);
+
+  const picture = useAnimatedStyle(() => ({
+    transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }],
+  }));
+
+  // .set() rather than "= ", which the React Compiler lint rule requires
+  // outside a worklet.
+  const reset = () => {
+    for (const v of [scale, savedScale]) v.set(1);
+    for (const v of [x, y, savedX, savedY]) v.set(0);
+  };
 
   return (
     <Modal visible={visible} animationType="fade" onRequestClose={onClose} onShow={reset} statusBarTranslucent>
-      <View style={styles.backdrop} {...panHandlers}>
-        <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { scale }] }]}>
-          {source ? <Image source={source} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityLabel={label} /> : null}
-        </Animated.View>
-      </View>
-      <SafeAreaView style={styles.chrome} edges={['top', 'bottom']} pointerEvents="box-none">
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close} hitSlop={8}>
-          <Text style={styles.closeGlyph}>×</Text>
-        </Pressable>
-        <Text style={styles.hint} pointerEvents="none">
-          Pinch to zoom · double-tap to zoom in
-        </Text>
-      </SafeAreaView>
+      <GestureHandlerRootView style={styles.backdrop}>
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[StyleSheet.absoluteFill, picture]}>
+            {source ? <Image source={source} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityLabel={label} /> : null}
+          </Animated.View>
+        </GestureDetector>
+        <SafeAreaView style={styles.chrome} edges={['top', 'bottom']} pointerEvents="box-none">
+          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close} hitSlop={8}>
+            <Text style={styles.closeGlyph}>×</Text>
+          </Pressable>
+          <Text style={styles.hint} pointerEvents="none">
+            Pinch to zoom · double-tap to zoom in
+          </Text>
+        </SafeAreaView>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

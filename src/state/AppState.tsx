@@ -5,7 +5,18 @@ import { api, Design, PhotoInput } from '../api';
 import type { StyleId } from '../data/catalog';
 import type { CartItem, NewCartItem } from '../lib/cart';
 
-const KEYS = { deviceId: 'dyp.deviceId', cart: 'dyp.cart' };
+const KEYS = { deviceId: 'dyp.deviceId', cart: 'dyp.cart', photo: 'dyp.photo' };
+
+// THE LAST PHOTO IS REMEMBERED FOR A DAY (31 Oct 2026).
+//
+// It used to live only in memory. A phone often closes an app sitting in the
+// background, and making a design takes a minute, so by the time the customer
+// came back to the result, the photo was gone and "Try another style" sent them
+// to step one to pick it again. Now the photo (a file on this phone) and its
+// upload ID are saved, and forgotten after 24 hours or when they choose a new
+// photo. The website keeps the uploaded photo for a day too.
+const PHOTO_KEEP_MS = 24 * 60 * 60 * 1000;
+type SavedPhoto = { photo: PhotoInput; photoId: string | null; savedAt: number };
 
 type AppState = {
   ready: boolean;
@@ -74,6 +85,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
       setDeviceId(id);
       setCart(await loadJson<CartItem[]>(KEYS.cart, []));
+      const saved = await loadJson<SavedPhoto | null>(KEYS.photo, null);
+      if (saved?.photo?.uri && Date.now() - saved.savedAt < PHOTO_KEEP_MS) {
+        setPhotoState(saved.photo);
+        setPhotoId(saved.photoId);
+      }
       setReady(true);
     })();
   }, []);
@@ -81,6 +97,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready) AsyncStorage.setItem(KEYS.cart, JSON.stringify(cart)).catch(() => undefined);
   }, [cart, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (!photo) {
+      AsyncStorage.removeItem(KEYS.photo).catch(() => undefined);
+      return;
+    }
+    const saved: SavedPhoto = { photo, photoId, savedAt: Date.now() };
+    AsyncStorage.setItem(KEYS.photo, JSON.stringify(saved)).catch(() => undefined);
+  }, [photo, photoId, ready]);
 
   const setPhoto = useCallback((p: PhotoInput | null) => {
     setPhotoState(p);
