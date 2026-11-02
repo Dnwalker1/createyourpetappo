@@ -19,6 +19,8 @@ export type ErrorCode =
   | 'TEXT_CHECKER_DOWN'
   | 'CART_ITEM_UNAVAILABLE'
   | 'PEOPLE_CONSENT_NEEDED'
+  | 'ORDER_LOCKED'
+  | 'ADDRESS_INVALID'
   | 'NETWORK';
 
 export class ApiError extends Error {
@@ -71,6 +73,17 @@ export type OrderStatus = 'in-review' | 'printing' | 'shipped' | 'delivered';
 
 export type OrderItem = { title: string; detail: string; quantity: number };
 
+/** Where an order ships. `line2` and `state` may be empty. Country is a two-letter code ("US"). */
+export type OrderAddress = {
+  name: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+};
+
 export type Order = {
   id: string;
   /** The Wix order number, shown as "Order #10042". */
@@ -84,6 +97,10 @@ export type Order = {
   preview?: ImageSourcePropType | null;
   /** What was ordered, for the order's detail view. */
   items: OrderItem[];
+  /** The shipping address, when the website sent it. */
+  shipTo?: OrderAddress | null;
+  /** True while every item is still In review, so the address can be fixed. */
+  canChangeAddress?: boolean;
 };
 
 export interface DesignYourPetApi {
@@ -115,6 +132,12 @@ export interface DesignYourPetApi {
    * null when no picture could be made; the app then shows its own preview.
    */
   backMockup(deviceId: string, designId: string, choice: ProductChoice): Promise<string | null>;
+  /**
+   * Corrects the shipping address of an order placed from this device, while
+   * it is still In review. Throws ORDER_LOCKED once it has gone to print, and
+   * ADDRESS_INVALID when a field is missing or malformed.
+   */
+  updateOrderAddress(deviceId: string, orderNumber: string, address: OrderAddress): Promise<void>;
   /** Reports a design as offensive or wrong; the backend holds it for review and emails the owner. */
   reportDesign(deviceId: string, designId: string, reason: string): Promise<void>;
 }

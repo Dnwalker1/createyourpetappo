@@ -4,7 +4,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { api, Order, OrderStatus } from '../api';
+import { api, ApiError, Order, OrderAddress, OrderStatus } from '../api';
+import { AddressForm } from '../components/AddressForm';
 import { BottomNav } from '../components/BottomNav';
 import { Body, Button, Card } from '../components/ui';
 import { formatMoney } from '../lib/money';
@@ -26,6 +27,13 @@ const NOTES: Record<OrderStatus, string> = {
   delivered: 'Delivered. Go put it on.',
 };
 
+// The address as it would be written on an envelope.
+function addressLines(a: OrderAddress): string[] {
+  return [a.name, a.line1, a.line2, [a.city, [a.state, a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', '), a.country !== 'US' ? a.country : '']
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
+
 // "Sep 23, 2026" in the customer's local time.
 const formatDate = (ms: number) => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -34,20 +42,40 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   // The order whose items are shown. Tap a card to open or close it.
   const [openId, setOpenId] = useState<string | null>(null);
+  // The order whose address is being changed, and the last one saved.
+  const [editing, setEditing] = useState<Order | null>(null);
+  const [savedFor, setSavedFor] = useState<string | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!deviceId) return;
-      let live = true;
-      api
-        .getOrders(deviceId)
-        .then((o) => live && setOrders(o.sort((a, b) => b.createdAt - a.createdAt)))
-        .catch(() => live && setOrders([]));
-      return () => {
-        live = false;
-      };
-    }, [deviceId]),
-  );
+  const load = useCallback(() => {
+    if (!deviceId) return () => undefined;
+    let live = true;
+    api
+      .getOrders(deviceId)
+      .then((o) => live && setOrders(o.sort((a, b) => b.createdAt - a.createdAt)))
+      .catch(() => live && setOrders([]));
+    return () => {
+      live = false;
+    };
+  }, [deviceId]);
+  useFocusEffect(load);
+
+  async function saveAddress(order: Order, address: OrderAddress) {
+    if (!deviceId) throw new Error('Please try again in a moment.');
+    try {
+      await api.updateOrderAddress(deviceId, order.number, address);
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'ORDER_LOCKED') {
+        throw new Error('This order has already gone to print, so the address can’t be changed here. Email info@goodwookie.com and we’ll do what we can.');
+      }
+      if (e instanceof ApiError && e.code === 'ADDRESS_INVALID') {
+        throw new Error(e.message && e.message !== e.code ? e.message : 'Something in that address doesn’t look right. Check each line and try again.');
+      }
+      throw new Error('That didn’t save. Check your connection and try again.');
+    }
+    setEditing(null);
+    setSavedFor(order.id);
+    load();
+  }
 
   return (
     <SafeAreaView style={styles.fill} edges={['top']}>
@@ -115,6 +143,18 @@ export default function Orders() {
                 </View>
               </View>
               <Body style={{ fontSize: 14 }}>{NOTES[o.status]}</Body>
+              {o.shipTo ? (
+                <View style={styles.shipTo} accessibilityLabel={`Ships to ${addressLines(o.shipTo).join(', ')}`}>
+                  <Text style={styles.shipLabel}>Ships to</Text>
+                  {addressLines(o.shipTo).map((l, i) => (
+                    <Text key={i} style={styles.shipLine}>
+                      {l}
+                    </Text>
+                  ))}
+                  {savedFor === o.id ? <Text style={styles.saved}>Address updated.</Text> : null}
+                  {o.canChangeAddress ? <Button variant="secondary" title="Change address" onPress={() => setEditing(o)} /> : null}
+                </View>
+              ) : null}
               {o.trackingUrl ? <Button variant="secondary" title="Track package" onPress={() => WebBrowser.openBrowserAsync(o.trackingUrl!)} /> : null}
             </Card>
           );
@@ -129,6 +169,9 @@ export default function Orders() {
         <PolicyLinks />
       </ScrollView>
       <BottomNav current="orders" />
+      {editing?.shipTo ? (
+        <AddressForm visible initial={editing.shipTo} onCancel={() => setEditing(null)} onSave={(a) => saveAddress(editing, a)} />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -151,4 +194,8 @@ const styles = StyleSheet.create({
   stage: { flex: 1, fontFamily: fonts.body, fontSize: 12, color: colors.slate },
   stageOn: { fontFamily: fonts.bodyBold, color: colors.navy },
   mail: { fontFamily: fonts.bodySemi, color: colors.navy, textDecorationLine: 'underline' },
+  shipTo: { gap: 2, padding: 12, borderRadius: 12, backgroundColor: colors.paper },
+  shipLabel: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.slate, marginBottom: 2 },
+  shipLine: { fontFamily: fonts.body, fontSize: 16, color: colors.navy },
+  saved: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.navy, marginTop: 4 },
 });

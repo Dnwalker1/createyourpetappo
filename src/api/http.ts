@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { styleIdFrom, type ProductChoice } from '../data/catalog';
-import { ApiError, CheckoutLine, Design, DesignYourPetApi, ErrorCode, Limits, Order, OrderStatus } from './types';
+import { ApiError, CheckoutLine, Design, DesignYourPetApi, ErrorCode, Limits, Order, OrderAddress, OrderStatus } from './types';
 
 // Talks to the goodwookie.com Wix backend (https://www.goodwookie.com/_functions).
 // Contract: docs/backend-api.md. Handled outcomes come back as HTTP 200 with
@@ -25,6 +25,8 @@ const CODE_MAP: Record<string, ErrorCode> = {
   bad_choice: 'CART_ITEM_UNAVAILABLE',
   bad_product: 'CART_ITEM_UNAVAILABLE',
   people_consent_needed: 'PEOPLE_CONSENT_NEEDED',
+  order_locked: 'ORDER_LOCKED',
+  bad_address: 'ADDRESS_INVALID',
 };
 
 // Design status -> the app's status, plus the problem screen for the ones that
@@ -96,6 +98,13 @@ function toOrderStatus(stage: unknown): OrderStatus {
   return 'in-review';
 }
 
+function toAddress(a: Json | undefined | null): OrderAddress | null {
+  if (!a || typeof a !== 'object') return null;
+  const s = (v: unknown) => String(v ?? '').trim();
+  const out = { name: s(a.name), line1: s(a.addressLine), line2: s(a.addressLine2), city: s(a.city), state: s(a.state), zip: s(a.postalCode), country: s(a.country) || 'US' };
+  return out.line1 || out.city ? out : null;
+}
+
 function toOrder(o: Json): Order {
   const items = (o.items as Json[] | undefined) ?? [];
   const designIds = new Set(items.map((i) => i.previewUrl));
@@ -117,6 +126,8 @@ function toOrder(o: Json): Order {
     trackingUrl: (o.trackingUrl as string | undefined) || undefined,
     preview: firstPreview ? { uri: String(firstPreview) } : null,
     items: items.map((i) => ({ title: String(i.title ?? ''), detail: String(i.detail ?? ''), quantity: Number(i.quantity ?? 1) })),
+    shipTo: toAddress(o.shipTo as Json | undefined),
+    canChangeAddress: o.canChangeAddress === true,
   };
 }
 
@@ -279,6 +290,11 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
       } catch {
         return null;
       }
+    },
+
+    async updateOrderAddress(deviceId, orderNumber, a) {
+      const address = { name: a.name, addressLine: a.line1, addressLine2: a.line2, city: a.city, state: a.state, postalCode: a.zip, country: a.country };
+      await call(deviceId, '/orderAddress', post({ orderNumber, address }));
     },
 
     async reportDesign(deviceId, designId, reason) {

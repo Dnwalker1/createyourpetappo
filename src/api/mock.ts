@@ -124,6 +124,12 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
       return null;
     },
 
+    async updateOrderAddress(_deviceId, orderNumber, address) {
+      const order = orders.get(orderNumber);
+      if (!order) throw new ApiError('ORDER_LOCKED');
+      orders.set(orderNumber, { ...order, shipTo: address });
+    },
+
     async reportDesign() {
       // Nothing to hold or email in the mock.
     },
