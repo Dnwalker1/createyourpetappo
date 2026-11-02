@@ -55,6 +55,7 @@ locks the options on the original products.
 | GET `/mockups/<taskKey>` | – | `{ status, mockupUrl, mockupUrls, mockups:[{placement,url}] }` |
 | POST `/checkout` | `{ items:[{designId,productKey,color?,size,print?,quantity}] }` | `{ checkoutId, checkoutUrl, summary }` |
 | GET `/checkout/<checkoutId>` | – | `{ completed, orderNumber }` |
+| POST `/orderAddress` | `{ orderNumber, address:{name,addressLine,addressLine2,city,state,postalCode,country} }` | `{ shipTo }`; `order_locked` once any line has left Printful draft, `bad_address` with a readable reason |
 | GET `/orders` | – | `{ orders:[{orderNumber,placedAt,total,stage,stages,trackingUrl,items}] }` |
 | POST `/report` | `{designId, reason}` (`offensive`, `person` or `other`) | `{ ok:true }`. Holds the design for review (status `flagged`) and emails Don via the `flagged-pet-design` triggered email. Google Play AI-content requirement. |
 
