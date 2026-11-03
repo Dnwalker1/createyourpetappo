@@ -111,7 +111,7 @@ export function ImageViewer({ source, visible, onClose, label }: { source: Image
             <Text style={styles.closeGlyph}>×</Text>
           </Pressable>
           <Text style={styles.hint} pointerEvents="none">
-            Pinch to zoom · double-tap to zoom in
+            Double-tap to zoom in or out
           </Text>
         </SafeAreaView>
       </GestureHandlerRootView>
