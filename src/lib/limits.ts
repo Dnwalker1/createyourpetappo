@@ -73,11 +73,30 @@ export function formatClockTime(ms: number, timeZone?: string): string {
   return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone });
 }
 
-// "3 of 5 designs available · next one unlocks at 8:14 PM". Never "today".
-export function availabilityLine(summary: LimitSummary, timeZone?: string): string {
+// The day an unlock falls on, in the customer's local time: '' for later
+// today, 'tomorrow', or a weekday name (only if the clock is far off).
+//
+// Added 6 Nov 2026 after testers read "next one unlocks at 7:30 AM" at 7:34 AM
+// as already past; it meant 7:30 tomorrow. Later-today times stay bare, so the
+// limit is still never described as "today".
+export function unlockDay(ms: number, now: number = Date.now(), timeZone?: string): string {
+  const day = (t: number) => new Date(t).toLocaleDateString('en-CA', { timeZone });
+  if (day(ms) === day(now)) return '';
+  if (day(ms) === day(now + DAY_MS)) return 'tomorrow';
+  return new Date(ms).toLocaleDateString('en-US', { weekday: 'long', timeZone });
+}
+
+// "at 8:14 PM" or "tomorrow at 7:30 AM".
+export function formatUnlock(ms: number, now: number = Date.now(), timeZone?: string): string {
+  const day = unlockDay(ms, now, timeZone);
+  return `${day ? `${day} ` : ''}at ${formatClockTime(ms, timeZone)}`;
+}
+
+// "3 of 5 designs available · next one unlocks tomorrow at 8:14 PM".
+export function availabilityLine(summary: LimitSummary, timeZone?: string, now: number = Date.now()): string {
   const base = `${summary.available} of ${MAX_GOOD_DESIGNS} designs available`;
   if (summary.available < MAX_GOOD_DESIGNS && summary.nextDesignAt) {
-    return `${base} · next one unlocks at ${formatClockTime(summary.nextDesignAt, timeZone)}`;
+    return `${base} · next one unlocks ${formatUnlock(summary.nextDesignAt, now, timeZone)}`;
   }
   return base;
 }

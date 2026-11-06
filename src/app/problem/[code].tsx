@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Alert, Body, Button, H1, Label, Screen, StepHeader, Tip } from '../../components/ui';
-import { formatClockTime } from '../../lib/limits';
+import { formatClockTime, unlockDay } from '../../lib/limits';
 import { useAppState } from '../../state/AppState';
 import { colors, fonts } from '../../theme';
 
@@ -16,6 +16,9 @@ export default function Problem() {
   const { code, reason, unlocksAt } = useLocalSearchParams<{ code: string; reason?: string; unlocksAt?: string }>();
   const { setPhoto } = useAppState();
   const unlock = unlocksAt ? formatClockTime(Number(unlocksAt)) : null;
+  // "tomorrow at" when the time is tomorrow, so 7:30 AM never looks already past.
+  const day = unlocksAt ? unlockDay(Number(unlocksAt)) : '';
+  const at = day ? ` ${day} at` : ' at';
   const newPhoto = () => {
     setPhoto(null);
     router.replace('/upload');
@@ -108,7 +111,7 @@ export default function Problem() {
       );
     case 'limit':
       return (
-        <DarkLimit title="That's five for now" body="Every design costs real money to make, so everyone gets five free in any 24 hours. The math isn't negotiable." unlockLabel="Your next free design unlocks at" unlock={unlock}>
+        <DarkLimit title="That's five for now" body="Every design costs real money to make, so everyone gets five free in any 24 hours. The math isn't negotiable." unlockLabel={`Your next free design unlocks${at}`} unlock={unlock}>
           Designs that don&apos;t work out never count. Your designs are saved, and you can still order any of them.
         </DarkLimit>
       );
@@ -117,7 +120,7 @@ export default function Problem() {
         <DarkLimit
           title="That's 12 tries today, which is the limit"
           body="Designs that don't work out never count toward your five, but there's a cap on tries to keep things fair for everyone."
-          unlockLabel="You can try again at"
+          unlockLabel={`You can try again${at}`}
           unlock={unlock}
         >
           Something not working? Email info@goodwookie.com.

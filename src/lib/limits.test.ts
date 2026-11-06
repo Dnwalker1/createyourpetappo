@@ -1,4 +1,4 @@
-import { DAY_MS, DesignRecord, availabilityLine, formatClockTime, summarizeLimits } from './limits';
+import { DAY_MS, DesignRecord, availabilityLine, formatClockTime, formatUnlock, summarizeLimits, unlockDay } from './limits';
 
 const HOUR = 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 8, 24, 12, 0, 0);
@@ -62,14 +62,24 @@ describe('summarizeLimits', () => {
 });
 
 describe('wording', () => {
+  it('says "tomorrow" when the unlock is on the next day', () => {
+    const made = Date.UTC(2026, 10, 6, 7, 30);
+    const now = Date.UTC(2026, 10, 6, 7, 34);
+    const s = summarizeLimits([{ id: 'x', createdAt: made, status: 'ready' }], now);
+    expect(availabilityLine(s, 'UTC', now)).toBe('4 of 5 designs available · next one unlocks tomorrow at 7:30 AM');
+    expect(formatUnlock(made + DAY_MS, now, 'UTC')).toBe('tomorrow at 7:30 AM');
+    expect(unlockDay(Date.UTC(2026, 10, 6, 20, 0), now, 'UTC')).toBe('');
+  });
+
   it('formats local clock times', () => {
     expect(formatClockTime(Date.UTC(2026, 8, 24, 20, 14), 'UTC')).toBe('8:14 PM');
   });
 
   it('says how many designs are available and when the next one unlocks, never "today"', () => {
     const made = { id: 'x', createdAt: Date.UTC(2026, 8, 23, 20, 14), status: 'ready' as const };
-    const s = summarizeLimits([made], Date.UTC(2026, 8, 24, 0, 0));
-    const line = availabilityLine(s, 'UTC');
+    const now = Date.UTC(2026, 8, 24, 0, 0);
+    const s = summarizeLimits([made], now);
+    const line = availabilityLine(s, 'UTC', now);
     expect(line).toBe('4 of 5 designs available · next one unlocks at 8:14 PM');
     expect(line).not.toMatch(/today/i);
     expect(availabilityLine(summarizeLimits([], NOW))).toBe('5 of 5 designs available');

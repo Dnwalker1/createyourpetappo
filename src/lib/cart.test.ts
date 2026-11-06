@@ -68,8 +68,8 @@ describe('bundle pricing', () => {
 
 describe('price ranges', () => {
   it('matches the product list', () => {
-    expect(formatRange(priceRange('tee'))).toBe('$26–$31');
-    expect(formatRange(priceRange('hoodie'))).toBe('$55.50–$60.50');
+    expect(formatRange(priceRange('tee'))).toBe('$26–$36');
+    expect(formatRange(priceRange('hoodie'))).toBe('$55.50–$67.50');
     expect(formatRange(priceRange('sticker'))).toBe('$11.50–$12');
     expect(formatRange(priceRange('poster'))).toBe('$24–$29.50');
   });

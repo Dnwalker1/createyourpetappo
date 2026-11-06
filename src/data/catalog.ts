@@ -194,9 +194,15 @@ export function priceCents(choice: ProductChoice): number {
   return size.priceCents;
 }
 
+// Lowest to highest price over every option, the back print included, so the
+// range on Pick your product never undersells the shirt (test report, 6 Nov 2026).
 export function priceRange(id: ProductId): [number, number] {
   const product = PRODUCTS[id];
-  const prices = product.kind === 'apparel' ? Object.values(product.priceCents) : product.sizes.map((s) => s.priceCents);
+  if (product.kind === 'apparel') {
+    const prices = Object.values(product.priceCents);
+    return [Math.min(...prices), Math.max(...prices) + product.backExtraCents];
+  }
+  const prices = product.sizes.map((s) => s.priceCents);
   return [Math.min(...prices), Math.max(...prices)];
 }
 
