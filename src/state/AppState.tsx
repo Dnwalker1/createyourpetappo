@@ -37,6 +37,9 @@ type AppState = {
   /** The On the Job title picked on the style screen ('' when none). */
   job: string;
   setJob: (job: string) => void;
+  /** The Portrait Studio sitting picked on the style screen ('' when none). */
+  sitting: string;
+  setSitting: (sitting: string) => void;
   setText: (text: string) => void;
   /** Turning it off also unticks the consent. */
   setIncludePeople: (on: boolean) => void;
@@ -70,6 +73,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [photoId, setPhotoId] = useState<string | null>(null);
   const [styleId, setStyleId] = useState<StyleId>('stamp');
   const [job, setJob] = useState('');
+  const [sitting, setSitting] = useState('');
   const [text, setText] = useState('');
   const [includePeople, setIncludePeopleState] = useState(false);
   const [peopleConsent, setPeopleConsent] = useState(false);
@@ -131,9 +135,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const startDesign = useCallback(async () => {
     if (!deviceId) throw new Error('No device ID');
     const id = await ensureUploaded();
-    // On the Job sends the picked job title as its text; the other styles
-    // send the typed name (only the stamp and poster have anywhere to put it).
-    const trimmed = styleId === 'job' ? job : text.trim();
+    // On the Job sends the picked job title as its text, and Portrait Studio
+    // the picked sitting; the other styles send the typed name (only the
+    // stamp, the poster and the hero have anywhere to put it).
+    const trimmed = styleId === 'job' ? job : styleId === 'portrait' ? sitting : text.trim();
     const { designId } = await api.createDesign(deviceId, {
       photoId: id,
       styleId,
@@ -141,7 +146,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       includePeople: includePeople && peopleConsent,
     });
     return designId;
-  }, [deviceId, ensureUploaded, styleId, job, text, includePeople, peopleConsent]);
+  }, [deviceId, ensureUploaded, styleId, job, sitting, text, includePeople, peopleConsent]);
 
   const value = useMemo<AppState>(
     () => ({
@@ -158,6 +163,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setStyleId,
       job,
       setJob,
+      sitting,
+      setSitting,
       setText,
       setIncludePeople,
       setPeopleConsent,
@@ -172,7 +179,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeFromCart: (id) => setCart((c) => c.filter((i) => i.id !== id)),
       clearCart: () => setCart([]),
     }),
-    [ready, deviceId, photo, styleId, job, text, includePeople, peopleConsent, activeDesign, cart, setPhoto, setIncludePeople, ensureUploaded, startDesign],
+    [ready, deviceId, photo, styleId, job, sitting, text, includePeople, peopleConsent, activeDesign, cart, setPhoto, setIncludePeople, ensureUploaded, startDesign],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

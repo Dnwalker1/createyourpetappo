@@ -4,19 +4,19 @@ import { useRef, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../api';
 import { Alert, Body, Button, Checkbox, H1, Screen, StepHeader } from '../components/ui';
-import { JOB_TITLES, MAX_TEXT_LENGTH, STYLES, jobLabel, styleById } from '../data/catalog';
+import { JOB_TITLES, MAX_TEXT_LENGTH, PORTRAIT_SITTINGS, STYLES, jobLabel, styleById } from '../data/catalog';
 import { problemRoute } from '../lib/errorRoute';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
 
 export default function Style() {
-  const { photo, styleId, setStyleId, job, setJob, text, setText, includePeople, setIncludePeople, peopleConsent, setPeopleConsent, startDesign } = useAppState();
+  const { photo, styleId, setStyleId, job, setJob, sitting, setSitting, text, setText, includePeople, setIncludePeople, peopleConsent, setPeopleConsent, startDesign } = useAppState();
   const [busy, setBusy] = useState(false);
   const [textError, setTextError] = useState<string | null>(null);
   const [inProgress, setInProgress] = useState(false);
   const [checkerBusy, setCheckerBusy] = useState(false);
   const style = styleById(styleId);
-  const needsJob = !!style.jobPicker && !job;
+  const needsJob = (!!style.jobPicker && !job) || (!!style.sittingPicker && !sitting);
   // Where the text field sits on the page, so it can be scrolled above the keyboard.
   const scrollRef = useRef<ScrollView>(null);
   const textY = useRef(0);
@@ -133,6 +133,29 @@ export default function Style() {
           </View>
           <Body style={{ fontSize: 14 }}>The job title goes on the banner. Several pets in one photo become one crew, and the title goes plural (Head Chefs).</Body>
         </View>
+      ) : style.sittingPicker ? (
+        <View style={{ gap: 8 }}>
+          <Text nativeID="sittingLabel" style={styles.fieldLabel}>
+            Pick your pet&apos;s portrait
+          </Text>
+          <View style={styles.jobs} accessibilityRole="radiogroup" accessibilityLabelledBy="sittingLabel">
+            {PORTRAIT_SITTINGS.map((t) => {
+              const on = t === sitting;
+              return (
+                <Pressable
+                  key={t}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setSitting(t)}
+                  style={[styles.job, on && styles.jobOn]}
+                >
+                  <Text style={[styles.jobText, on && { color: colors.cream }]}>{jobLabel(t)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Body style={{ fontSize: 14 }}>Your pet gets dressed for the occasion. Several pets in one photo pose together, like a family portrait.</Body>
+        </View>
       ) : style.allowsText ? (
         <View style={{ gap: 8 }} onLayout={(e) => (textY.current = e.nativeEvent.layout.y)}>
           <View style={styles.labelRow}>
@@ -168,7 +191,7 @@ export default function Style() {
         </View>
       ) : (
         <View style={styles.note}>
-          <Body style={{ fontSize: 15 }}>Names only fit on the Travel Stamp and the Travel Poster. This style lets the picture do the talking.</Body>
+          <Body style={{ fontSize: 15 }}>Names only fit on the Travel Stamp, the Travel Poster and the Anime Hero. This style lets the picture do the talking.</Body>
         </View>
       )}
 

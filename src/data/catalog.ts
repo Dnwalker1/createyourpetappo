@@ -4,7 +4,7 @@ import type { ImageSourcePropType } from 'react-native';
 // Source: the live Wix store variant prices (updated 27 Oct 2026). Keep in step
 // with Wix: Wix charges its own prices at checkout, these are what the app shows.
 
-export type StyleId = 'stamp' | 'poster' | 'evening' | 'sticker' | 'job' | 'sketch';
+export type StyleId = 'stamp' | 'poster' | 'evening' | 'sticker' | 'job' | 'sketch' | 'hero' | 'portrait';
 
 export type DesignStyle = {
   id: StyleId;
@@ -12,21 +12,102 @@ export type DesignStyle = {
   /** The website's key for the style (PetDesigns.styleChoice). */
   siteKey: string;
   sample: ImageSourcePropType;
+  /**
+   * More finished designs in this style, for the style gallery (different
+   * animals, so a customer can see it isn't just for dogs). The sample comes
+   * first; these follow it.
+   */
+  examples?: ImageSourcePropType[];
+  /** One line for the style gallery: what this style is. */
+  blurb: string;
   allowsText: boolean;
   /** On the Job: the customer picks a job title instead of typing a name. */
   jobPicker?: boolean;
+  /** Portrait Studio: the customer picks a sitting. Never lettered. */
+  sittingPicker?: boolean;
 };
 
 export const MAX_TEXT_LENGTH = 18;
 
 export const STYLES: DesignStyle[] = [
-  { id: 'stamp', name: 'Travel Stamp', siteKey: 'travelStamp', sample: require('../../assets/images/styles/travel-stamp.png'), allowsText: true },
-  { id: 'poster', name: 'Travel Poster', siteKey: 'travelPoster', sample: require('../../assets/images/styles/travel-poster.png'), allowsText: true },
-  { id: 'evening', name: 'Evening Portrait', siteKey: 'eveningPortrait', sample: require('../../assets/images/styles/evening-portrait.png'), allowsText: false },
-  { id: 'sticker', name: 'Adventure Sticker', siteKey: 'adventureSticker', sample: require('../../assets/images/styles/adventure-sticker.png'), allowsText: false },
-  { id: 'job', name: 'On the Job', siteKey: 'onTheJob', sample: require('../../assets/images/styles/on-the-job.png'), allowsText: false, jobPicker: true },
-  { id: 'sketch', name: 'Pencil Sketch', siteKey: 'pencilSketch', sample: require('../../assets/images/styles/pencil-sketch.png'), allowsText: false },
+  {
+    id: 'stamp',
+    name: 'Travel Stamp',
+    siteKey: 'travelStamp',
+    sample: require('../../assets/images/styles/travel-stamp.png'),
+    blurb: 'A vintage postage stamp from somewhere wonderful, with room for a name.',
+    allowsText: true,
+  },
+  {
+    id: 'poster',
+    name: 'Travel Poster',
+    siteKey: 'travelPoster',
+    sample: require('../../assets/images/styles/travel-poster.png'),
+    blurb: 'A bold mid-century park poster, with your pet as the main attraction.',
+    allowsText: true,
+  },
+  {
+    id: 'evening',
+    name: 'Evening Portrait',
+    siteKey: 'eveningPortrait',
+    sample: require('../../assets/images/styles/evening-portrait.png'),
+    blurb: 'A warm painted portrait in the glow of a summer evening.',
+    allowsText: false,
+  },
+  {
+    id: 'sticker',
+    name: 'Adventure Sticker',
+    siteKey: 'adventureSticker',
+    sample: require('../../assets/images/styles/adventure-sticker.png'),
+    blurb: 'A die-cut adventure badge for the trail, the lake or the open road.',
+    allowsText: false,
+  },
+  {
+    id: 'job',
+    name: 'On the Job',
+    siteKey: 'onTheJob',
+    sample: require('../../assets/images/styles/on-the-job.png'),
+    blurb: 'Your pet hard at work, with a job title like Head Chef or Trail Boss.',
+    allowsText: false,
+    jobPicker: true,
+  },
+  {
+    id: 'sketch',
+    name: 'Pencil Sketch',
+    siteKey: 'pencilSketch',
+    sample: require('../../assets/images/styles/pencil-sketch.png'),
+    blurb: 'A hand-drawn pencil portrait with a soft wash of colour.',
+    allowsText: false,
+  },
+  {
+    // Added 8 Nov 2026. TEMPORARY SAMPLE: replace anime-hero.png with a real
+    // design before this ships.
+    id: 'hero',
+    name: 'Anime Hero',
+    siteKey: 'animeHero',
+    sample: require('../../assets/images/styles/anime-hero.png'),
+    blurb: 'Your pet as the caped hero of their own anime, watching over the city.',
+    allowsText: true,
+  },
+  {
+    // Added 8 Nov 2026. TEMPORARY SAMPLE: replace portrait-studio.png with a
+    // real design before this ships.
+    id: 'portrait',
+    name: 'Portrait Studio',
+    siteKey: 'portraitStudio',
+    sample: require('../../assets/images/styles/portrait-studio.png'),
+    blurb: 'Dressed up for a royal portrait, school picture day, graduation or a wedding.',
+    allowsText: false,
+    sittingPicker: true,
+  },
 ];
+
+/**
+ * Portrait Studio sittings. Must match PORTRAIT_SITTINGS in the website's
+ * aiDesign.web.js exactly: the website refuses any sitting not on its list.
+ * Shown with jobLabel ("School Picture Day"); never lettered on the design.
+ */
+export const PORTRAIT_SITTINGS = ['ROYAL PORTRAIT', 'SCHOOL PICTURE DAY', 'GRADUATION DAY', 'WEDDING PORTRAIT'] as const;
 
 /**
  * On the Job titles. Must match JOB_TITLES in the website's aiDesign.web.js

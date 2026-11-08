@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { Body, Button, H1, Pill, Row, Screen } from '../components/ui';
 import { PolicyLinks } from '../components/PolicyLinks';
 import { STYLES } from '../data/catalog';
@@ -16,16 +16,17 @@ export default function Welcome() {
       footer={
         <>
           <Button title="Get started" onPress={() => router.push('/upload')} />
+          <Button variant="dark-secondary" title={`See all ${STYLES.length} styles`} onPress={() => router.push('/styles')} />
           <Button variant="dark-secondary" title="See your designs" onPress={() => router.push('/designs')} />
         </>
       }
     >
       <Image source={badge} style={styles.badge} contentFit="contain" accessibilityLabel="Goodwookie Productions LLC: Adventure is the destination" />
-      <View style={styles.collage}>
+      <Pressable style={styles.collage} accessibilityRole="button" accessibilityLabel={`See all ${STYLES.length} styles`} onPress={() => router.push('/styles')}>
         <Image source={evening.sample} style={[styles.sample, styles.left]} contentFit="cover" accessibilityLabel="Evening Portrait sample" />
         <Image source={stamp.sample} style={[styles.sample, styles.center]} contentFit="contain" accessibilityLabel="Travel Stamp sample" />
         <Image source={sticker.sample} style={[styles.sample, styles.right]} contentFit="contain" accessibilityLabel="Adventure Sticker sample" />
-      </View>
+      </Pressable>
       <H1 tone="dark" heavy>
         Put Your Best Friend On A Shirt
       </H1>
