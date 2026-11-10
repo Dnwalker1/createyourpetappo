@@ -80,8 +80,7 @@ export const STYLES: DesignStyle[] = [
     allowsText: false,
   },
   {
-    // Added 8 Nov 2026. TEMPORARY SAMPLE: replace anime-hero.png with a real
-    // design before this ships.
+    // Added 8 Nov 2026. Sample: Don's "OINK" pig, made on the site 10 Nov.
     id: 'hero',
     name: 'Anime Hero',
     siteKey: 'animeHero',
@@ -90,12 +89,13 @@ export const STYLES: DesignStyle[] = [
     allowsText: true,
   },
   {
-    // Added 8 Nov 2026. TEMPORARY SAMPLE: replace portrait-studio.png with a
-    // real design before this ships.
+    // Added 8 Nov 2026. Samples made on the site 10 Nov: the royal donkey,
+    // the school-picture Shih Tzu and the four wedding cats.
     id: 'portrait',
     name: 'Portrait Studio',
     siteKey: 'portraitStudio',
     sample: require('../../assets/images/styles/portrait-studio.png'),
+    examples: [require('../../assets/images/styles/portrait-studio-2.png'), require('../../assets/images/styles/portrait-studio-3.png')],
     blurb: 'Dressed up for a royal portrait, school picture day, graduation or a wedding.',
     allowsText: false,
     sittingPicker: true,

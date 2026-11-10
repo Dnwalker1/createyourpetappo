@@ -186,7 +186,7 @@ export default function Style() {
               {textError}
             </Text>
           ) : (
-            <Body style={{ fontSize: 14 }}>Up to 18 characters. Your pet&apos;s name works. Profanity and trademarked names don&apos;t.</Body>
+            <Body style={{ fontSize: 14 }}>Up to 18 characters. Letters, numbers and ! ? &amp; $ @ + # work. Profanity and trademarked names don&apos;t.</Body>
           )}
         </View>
       ) : (
