@@ -76,7 +76,7 @@ export const STYLES: DesignStyle[] = [
     name: 'Pencil Sketch',
     siteKey: 'pencilSketch',
     sample: require('../../assets/images/styles/pencil-sketch.png'),
-    blurb: 'A hand-drawn pencil portrait with a soft wash of colour.',
+    blurb: 'A hand-drawn pencil portrait with a soft wash of color.',
     allowsText: false,
   },
   {
