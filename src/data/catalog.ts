@@ -85,6 +85,8 @@ export const STYLES: DesignStyle[] = [
     name: 'Anime Hero',
     siteKey: 'animeHero',
     sample: require('../../assets/images/styles/anime-hero.png'),
+    // Arya the dog and Fang the corn snake (10 Nov): proof it isn't just for dogs.
+    examples: [require('../../assets/images/styles/anime-hero-2.png'), require('../../assets/images/styles/anime-hero-3.png')],
     blurb: 'Your pet as the caped hero of their own anime, watching over the city.',
     allowsText: true,
   },
@@ -95,7 +97,12 @@ export const STYLES: DesignStyle[] = [
     name: 'Portrait Studio',
     siteKey: 'portraitStudio',
     sample: require('../../assets/images/styles/portrait-studio.png'),
-    examples: [require('../../assets/images/styles/portrait-studio-2.png'), require('../../assets/images/styles/portrait-studio-3.png')],
+    examples: [
+      require('../../assets/images/styles/portrait-studio-5.png'), // school-picture corn snake
+      require('../../assets/images/styles/portrait-studio-3.png'), // wedding cats
+      require('../../assets/images/styles/portrait-studio-4.png'), // royal dog
+      require('../../assets/images/styles/portrait-studio-2.png'), // school-picture Shih Tzu
+    ],
     blurb: 'Dressed up for a royal portrait, school picture day, graduation or a wedding.',
     allowsText: false,
     sittingPicker: true,
