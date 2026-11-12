@@ -193,13 +193,15 @@ export default function Checkout() {
       <View style={styles.pay}>
         <Label>WAYS TO PAY</Label>
         <View style={styles.chips}>
-          {['Credit or debit card', 'PayPal', 'Apple Pay', 'Google Pay'].map((m) => (
+          {/* Only this phone's own wallet: Apple Pay on an iPhone, Google Pay
+              on Android (test report, 12 Nov 2026). */}
+          {['Credit or debit card', 'PayPal', Platform.OS === 'ios' ? 'Apple Pay' : 'Google Pay'].map((m) => (
             <View key={m} style={styles.chip}>
               <Text style={styles.chipText}>{m}</Text>
             </View>
           ))}
         </View>
-        <Body style={{ fontSize: 14 }}>The options you see depend on your phone. You&apos;ll enter your shipping address on the next screen.</Body>
+        <Body style={{ fontSize: 14 }}>You&apos;ll enter your shipping address on the next screen.</Body>
       </View>
       {pendingId && notPaid && !busy ? (
         <Alert title="No payment yet">

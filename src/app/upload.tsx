@@ -147,7 +147,7 @@ export default function Upload() {
         <View style={{ flex: 1 }}>
           <Button
             variant="secondary"
-            title={photo ? "Choose another" : "Choose photo"}
+            title="Upload photo"
             onPress={() => pick("library")}
           />
         </View>
