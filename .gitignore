@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Expo Simulators controller credentials (never commit)
+.env.eas-simulator

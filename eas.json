@@ -30,6 +30,13 @@
     "production": {
       "autoIncrement": true,
       "environment": "production"
+    },
+    "screenshots": {
+      "extends": "production",
+      "autoIncrement": false,
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {
