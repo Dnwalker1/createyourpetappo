@@ -112,7 +112,7 @@ export default function Product() {
         </View>
         <SizePicker choice={choice} onChange={setChoice} />
       </View>
-      <Body style={{ fontSize: 14 }}>{productDescription(choice)} Free shipping. Printed on demand; allow a few days plus shipping.</Body>
+      <Body style={{ fontSize: 14 }}>{productDescription(choice)} Free shipping to US addresses. Printed on demand; allow a few days plus shipping.</Body>
       <BundleCard />
     </Screen>
   );

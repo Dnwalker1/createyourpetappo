@@ -35,7 +35,7 @@ export default function Welcome() {
         Buy them all and save 10% on everything. Get the tee, hoodie, sticker and poster with your designs, and the rest of your order is 10% off too.
       </Body>
       <Body tone="dark" style={styles.shipping}>
-        Shipping is always free.
+        Free shipping on every US order.
       </Body>
       <Row style={{ flexWrap: 'wrap', gap: 8 }}>
         <Pill tone="dark">About 1 minute</Pill>

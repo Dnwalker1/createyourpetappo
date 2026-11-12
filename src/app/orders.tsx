@@ -22,8 +22,8 @@ const STAGES: { key: OrderStatus; label: string }[] = [
 ];
 const NOTES: Record<OrderStatus, string> = {
   'in-review': 'Being reviewed by hand before it goes to print.',
-  printing: 'Being printed. Shipping is free.',
-  shipped: 'On its way. Shipping is free.',
+  printing: 'Being printed.',
+  shipped: 'On its way.',
   delivered: 'Delivered. Go put it on.',
 };
 

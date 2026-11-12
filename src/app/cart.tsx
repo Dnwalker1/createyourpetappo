@@ -82,7 +82,7 @@ export default function Cart() {
         <Card style={styles.madeToOrder}>
           <Text style={styles.title}>Made for you, not pulled off a shelf</Text>
           <Body style={{ fontSize: 14 }}>
-            Everything here is printed after you order it, one piece at a time, just for you. That&apos;s slower than big-store shipping, so allow a week or more for printing and delivery. Shipping is always free.
+            Everything here is printed after you order it, one piece at a time, just for you. That&apos;s slower than big-store shipping, so allow a week or more for printing and delivery. Shipping is free to US addresses and $19.99 to anywhere else.
           </Body>
         </Card>
       ) : null}
@@ -101,7 +101,7 @@ export default function Cart() {
           ) : null}
           <View style={styles.line}>
             <Text style={styles.sumText}>Shipping</Text>
-            <Text style={styles.sumText}>Free</Text>
+            <Text style={styles.sumText}>Free in the US</Text>
           </View>
           <View style={styles.line}>
             <Text style={styles.sumText}>Tax</Text>

@@ -27,7 +27,7 @@ export default function Result() {
   }
 
   return (
-    <Screen footer={<Body style={{ textAlign: 'center', fontSize: 14 }}>Free shipping on everything in the store. We cover that part.</Body>}>
+    <Screen footer={<Body style={{ textAlign: 'center', fontSize: 14 }}>Free shipping on every US order.</Body>}>
       <StepHeader step={5} label={`STEP 5 OF 5 · ${styleById(activeDesign.styleId).name.toUpperCase()}`} />
       <Pressable accessibilityRole="button" accessibilityLabel="Enlarge your design" onPress={() => setViewing(true)} style={styles.preview}>
         <ProductPreview choice={DEFAULT_CHOICES.tee} design={activeDesign.preview} size={196} />

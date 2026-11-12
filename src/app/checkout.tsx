@@ -178,7 +178,7 @@ export default function Checkout() {
         ) : null}
         <View style={styles.line}>
           <Text style={styles.muted}>Shipping</Text>
-          <Text style={styles.muted}>Free</Text>
+          <Text style={styles.muted}>Free in the US · $19.99 elsewhere</Text>
         </View>
         <View style={styles.line}>
           <Text style={styles.muted}>Tax</Text>
@@ -186,7 +186,7 @@ export default function Checkout() {
         </View>
         <View style={styles.rule} />
         <View style={styles.line}>
-          <Text style={styles.totalLabel}>Total before tax</Text>
+          <Text style={styles.totalLabel}>Total before tax and shipping</Text>
           <Text style={styles.total}>{formatMoney(totals.totalCents)}</Text>
         </View>
       </Card>
