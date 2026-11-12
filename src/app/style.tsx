@@ -35,6 +35,7 @@ import {
   type DesignStyle,
 } from "../data/catalog";
 import { problemRoute } from "../lib/errorRoute";
+import { allowedTextOnly } from "../lib/designText";
 import { useAppState } from "../state/AppState";
 import { colors, fonts } from "../theme";
 
@@ -199,8 +200,16 @@ export default function Style() {
           accessibilityLabel="Text on your design"
           value={text}
           onChangeText={(t) => {
-            setText(t.slice(0, MAX_TEXT_LENGTH));
-            setTextError(null);
+            // Only the characters the website prints get typed at all, so a
+            // stray _ * ; or = can't make a name fail later (test report,
+            // 12 Nov 2026). Must match cleanCustomText in aiDesign.web.js.
+            const kept = allowedTextOnly(t);
+            setText(kept.slice(0, MAX_TEXT_LENGTH));
+            setTextError(
+              kept.length < t.length
+                ? `That character can't go on a design. Letters, numbers and ! ? & $ @ + # work.`
+                : null,
+            );
           }}
           maxLength={MAX_TEXT_LENGTH}
           onFocus={showTextField}
@@ -218,8 +227,8 @@ export default function Style() {
           </Text>
         ) : (
           <Body style={{ fontSize: 14 }}>
-            Up to 18 characters. Letters, numbers and ! ? &amp; $ @ + # work.
-            Profanity and trademarked names don&apos;t.
+            Up to 18 characters. Letters, numbers and ! ? &amp; $ @ + # % , :
+            &apos; . - work. Profanity and trademarked names don&apos;t.
           </Body>
         )}
       </View>
