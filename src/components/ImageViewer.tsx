@@ -1,9 +1,25 @@
-import { Image } from 'expo-image';
-import { ImageSourcePropType, Modal, Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fonts } from '../theme';
+import { Image } from "expo-image";
+import {
+  ImageSourcePropType,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors, fonts } from "../theme";
 
 const MAX_SCALE = 4;
 const DOUBLE_TAP_SCALE = 2.5;
@@ -18,8 +34,22 @@ const DOUBLE_TAP_SCALE = 2.5;
 //
 // A Modal is its own native window, so it needs its own GestureHandlerRootView
 // inside it; the one at the app root doesn't reach in here.
-export function ImageViewer({ source, visible, onClose, label }: { source: ImageSourcePropType | null; visible: boolean; onClose: () => void; label: string }) {
+export function ImageViewer({
+  source,
+  visible,
+  onClose,
+  label,
+}: {
+  source: ImageSourcePropType | null;
+  visible: boolean;
+  onClose: () => void;
+  label: string;
+}) {
   const { width, height } = useWindowDimensions();
+  // Read the safe area here, OUTSIDE the Modal (13 Nov 2026). Inside it, iOS
+  // reported no insets, so the close button sat up in the status bar over the
+  // clock and battery and was hard to tap.
+  const insets = useSafeAreaInsets();
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -30,17 +60,17 @@ export function ImageViewer({ source, visible, onClose, label }: { source: Image
 
   // Keep the picture from being dragged off screen at the current zoom.
   const clampX = (v: number, s: number) => {
-    'worklet';
+    "worklet";
     const max = (width * (s - 1)) / 2;
     return Math.min(max, Math.max(-max, v));
   };
   const clampY = (v: number, s: number) => {
-    'worklet';
+    "worklet";
     const max = (height * (s - 1)) / 2;
     return Math.min(max, Math.max(-max, v));
   };
   const settle = () => {
-    'worklet';
+    "worklet";
     const s = Math.min(MAX_SCALE, Math.max(1, scale.value));
     scale.value = withTiming(s);
     x.value = withTiming(clampX(x.value, s));
@@ -55,7 +85,10 @@ export function ImageViewer({ source, visible, onClose, label }: { source: Image
       savedScale.value = scale.value;
     })
     .onUpdate((e) => {
-      scale.value = Math.min(MAX_SCALE * 1.2, Math.max(0.8, savedScale.value * e.scale));
+      scale.value = Math.min(
+        MAX_SCALE * 1.2,
+        Math.max(0.8, savedScale.value * e.scale),
+      );
     })
     .onEnd(settle);
 
@@ -88,7 +121,11 @@ export function ImageViewer({ source, visible, onClose, label }: { source: Image
   const gesture = Gesture.Simultaneous(pinch, pan, doubleTap);
 
   const picture = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }],
+    transform: [
+      { translateX: x.value },
+      { translateY: y.value },
+      { scale: scale.value },
+    ],
   }));
 
   // .set() rather than "= ", which the React Compiler lint rule requires
@@ -99,38 +136,84 @@ export function ImageViewer({ source, visible, onClose, label }: { source: Image
   };
 
   return (
-    <Modal visible={visible} animationType="fade" onRequestClose={onClose} onShow={reset} statusBarTranslucent>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+      onShow={reset}
+      statusBarTranslucent
+    >
       <GestureHandlerRootView style={styles.backdrop}>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[StyleSheet.absoluteFill, picture]}>
-            {source ? <Image source={source} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityLabel={label} /> : null}
+            {source ? (
+              <Image
+                source={source}
+                style={StyleSheet.absoluteFill}
+                contentFit="contain"
+                accessibilityLabel={label}
+              />
+            ) : null}
           </Animated.View>
         </GestureDetector>
-        <SafeAreaView style={styles.chrome} edges={['top', 'bottom']} pointerEvents="box-none">
-          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close} hitSlop={8}>
+        <View
+          style={[
+            styles.chrome,
+            {
+              paddingTop: Math.max(insets.top, 24) + 12,
+              paddingBottom: Math.max(insets.bottom, 0) + 16,
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            onPress={onClose}
+            style={styles.close}
+            hitSlop={12}
+          >
             <Text style={styles.closeGlyph}>×</Text>
           </Pressable>
           <Text style={styles.hint} pointerEvents="none">
             Double-tap to zoom in or out
           </Text>
-        </SafeAreaView>
+        </View>
       </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.navy, overflow: 'hidden' },
-  chrome: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'space-between', padding: 16 },
+  backdrop: { flex: 1, backgroundColor: colors.navy, overflow: "hidden" },
+  chrome: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: "space-between",
+    padding: 16,
+  },
   close: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(239, 227, 198, 0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(239, 227, 198, 0.92)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  closeGlyph: { fontFamily: fonts.bodyBold, fontSize: 30, lineHeight: 32, color: colors.navy },
-  hint: { alignSelf: 'center', fontFamily: fonts.body, fontSize: 14, color: colors.agedCream },
+  closeGlyph: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 30,
+    lineHeight: 32,
+    color: colors.navy,
+  },
+  hint: {
+    alignSelf: "center",
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.agedCream,
+  },
 });
