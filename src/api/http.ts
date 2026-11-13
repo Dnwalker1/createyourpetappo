@@ -1,7 +1,18 @@
-import * as FileSystem from 'expo-file-system/legacy';
-import { Platform } from 'react-native';
-import { styleIdFrom, type ProductChoice } from '../data/catalog';
-import { ApiError, CheckoutLine, Design, DesignYourPetApi, ErrorCode, Limits, Order, OrderAddress, OrderStatus } from './types';
+import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
+import { styleIdFrom, type ProductChoice } from "../data/catalog";
+import {
+  ApiError,
+  CheckoutLine,
+  Design,
+  DesignYourPetApi,
+  ErrorCode,
+  Limits,
+  Order,
+  OrderAddress,
+  OrderArtwork,
+  OrderStatus,
+} from "./types";
 
 // Talks to the goodwookie.com Wix backend (https://www.goodwookie.com/_functions).
 // Contract: docs/backend-api.md. Handled outcomes come back as HTTP 200 with
@@ -11,34 +22,37 @@ type Json = Record<string, unknown>;
 
 // Backend error code -> the app's error code (and so its problem screen).
 const CODE_MAP: Record<string, ErrorCode> = {
-  limit_designs: 'LIMIT_REACHED',
-  limit_tries: 'TRIES_LIMIT',
-  studio_busy: 'STUDIO_BUSY',
-  one_at_a_time: 'DESIGN_IN_PROGRESS',
-  text_rejected: 'TEXT_REJECTED',
-  text_checker_down: 'TEXT_CHECKER_DOWN',
-  bad_photo: 'UPLOAD_FAILED',
-  bad_photo_type: 'UPLOAD_FAILED',
-  upload_unavailable: 'UPLOAD_FAILED',
-  upload_not_ready: 'UPLOAD_FAILED',
-  design_unavailable: 'CART_ITEM_UNAVAILABLE',
-  bad_choice: 'CART_ITEM_UNAVAILABLE',
-  bad_product: 'CART_ITEM_UNAVAILABLE',
-  people_consent_needed: 'PEOPLE_CONSENT_NEEDED',
-  order_locked: 'ORDER_LOCKED',
-  bad_address: 'ADDRESS_INVALID',
+  limit_designs: "LIMIT_REACHED",
+  limit_tries: "TRIES_LIMIT",
+  studio_busy: "STUDIO_BUSY",
+  one_at_a_time: "DESIGN_IN_PROGRESS",
+  text_rejected: "TEXT_REJECTED",
+  text_checker_down: "TEXT_CHECKER_DOWN",
+  bad_photo: "UPLOAD_FAILED",
+  bad_photo_type: "UPLOAD_FAILED",
+  upload_unavailable: "UPLOAD_FAILED",
+  upload_not_ready: "UPLOAD_FAILED",
+  design_unavailable: "CART_ITEM_UNAVAILABLE",
+  bad_choice: "CART_ITEM_UNAVAILABLE",
+  bad_product: "CART_ITEM_UNAVAILABLE",
+  people_consent_needed: "PEOPLE_CONSENT_NEEDED",
+  order_locked: "ORDER_LOCKED",
+  bad_address: "ADDRESS_INVALID",
 };
 
 // Design status -> the app's status, plus the problem screen for the ones that
 // didn't come out. None of these count toward the 5; all count toward the 12.
-const STATUS_MAP: Record<string, { status: Design['status']; problem?: ErrorCode }> = {
-  working: { status: 'processing' },
-  ready: { status: 'ready' },
-  ordered: { status: 'ordered' },
-  no_pet: { status: 'rejected', problem: 'NO_PET' },
-  photo_rejected: { status: 'rejected', problem: 'PHOTO_REJECTED' },
-  checker_down: { status: 'failed', problem: 'CHECKER_UNAVAILABLE' },
-  failed: { status: 'failed', problem: 'DESIGN_FAILED' },
+const STATUS_MAP: Record<
+  string,
+  { status: Design["status"]; problem?: ErrorCode }
+> = {
+  working: { status: "processing" },
+  ready: { status: "ready" },
+  ordered: { status: "ordered" },
+  no_pet: { status: "rejected", problem: "NO_PET" },
+  photo_rejected: { status: "rejected", problem: "PHOTO_REJECTED" },
+  checker_down: { status: "failed", problem: "CHECKER_UNAVAILABLE" },
+  failed: { status: "failed", problem: "DESIGN_FAILED" },
 };
 
 const time = (v: unknown) => (v ? Date.parse(String(v)) : null);
@@ -46,15 +60,20 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // The backend's size names. Only posters differ: "12×12" with a multiplication sign.
 function backendSize(choice: ProductChoice): string {
-  return choice.product === 'poster' ? choice.size.replace('x', '×') : choice.size;
+  return choice.product === "poster"
+    ? choice.size.replace("x", "×")
+    : choice.size;
 }
 
 function toDesign(d: Json): Design {
-  const mapped = STATUS_MAP[String(d.status ?? 'ready')] ?? { status: 'failed', problem: 'DESIGN_FAILED' };
+  const mapped = STATUS_MAP[String(d.status ?? "ready")] ?? {
+    status: "failed",
+    problem: "DESIGN_FAILED",
+  };
   return {
     id: String(d.designId),
     // The backend sends the display name ("Evening Portrait"), not the key.
-    styleId: styleIdFrom(d.style) ?? styleIdFrom(d.styleKey) ?? 'stamp',
+    styleId: styleIdFrom(d.style) ?? styleIdFrom(d.styleKey) ?? "stamp",
     text: (d.text as string | undefined) || undefined,
     status: mapped.status,
     problem: mapped.problem,
@@ -64,45 +83,81 @@ function toDesign(d: Json): Design {
   };
 }
 
-function toLimits(allowance: Json | undefined, inProgressDesignId: unknown): Limits {
+function toLimits(
+  allowance: Json | undefined,
+  inProgressDesignId: unknown,
+): Limits {
   const a = allowance ?? {};
   const designsLeft = Number(a.designsLeft ?? 0);
   const triesLeft = Number(a.triesLeft ?? 0);
-  let blockedBy: Limits['blockedBy'] = null;
+  let blockedBy: Limits["blockedBy"] = null;
   let unlocksAt: number | null = null;
   if (inProgressDesignId) {
-    blockedBy = 'in-progress';
+    blockedBy = "in-progress";
   } else if (designsLeft <= 0) {
-    blockedBy = 'designs';
+    blockedBy = "designs";
     unlocksAt = time(a.designUnlockAt);
   } else if (triesLeft <= 0) {
-    blockedBy = 'tries';
+    blockedBy = "tries";
     unlocksAt = time(a.tryUnlockAt);
   }
-  return { available: designsLeft, limit: Number(a.designsLimit ?? 5), nextDesignAt: time(a.designUnlockAt), blockedBy, unlocksAt };
+  return {
+    available: designsLeft,
+    limit: Number(a.designsLimit ?? 5),
+    nextDesignAt: time(a.designUnlockAt),
+    blockedBy,
+    unlocksAt,
+  };
 }
 
 // The live backend sends Wix's formatted total ("$127.95", "$1,027.95");
 // older answers and the tests send a plain number. Read both.
 function toCents(total: unknown): number {
-  const n = typeof total === 'number' ? total : Number(String(total ?? '').replace(/[^0-9.-]/g, ''));
+  const n =
+    typeof total === "number"
+      ? total
+      : Number(String(total ?? "").replace(/[^0-9.-]/g, ""));
   return Number.isFinite(n) ? Math.round(n * 100) : 0;
 }
 
 // Order stage names aren't fixed in the contract, so match on the word.
 function toOrderStatus(stage: unknown): OrderStatus {
-  const s = String(stage ?? '').toLowerCase();
-  if (s.includes('deliver')) return 'delivered';
-  if (s.includes('ship')) return 'shipped';
-  if (s.includes('print') || s.includes('production')) return 'printing';
-  return 'in-review';
+  const s = String(stage ?? "").toLowerCase();
+  if (s.includes("deliver")) return "delivered";
+  if (s.includes("ship")) return "shipped";
+  if (s.includes("print") || s.includes("production")) return "printing";
+  return "in-review";
 }
 
 function toAddress(a: Json | undefined | null): OrderAddress | null {
-  if (!a || typeof a !== 'object') return null;
-  const s = (v: unknown) => String(v ?? '').trim();
-  const out = { name: s(a.name), line1: s(a.addressLine), line2: s(a.addressLine2), city: s(a.city), state: s(a.state), zip: s(a.postalCode), country: s(a.country) || 'US' };
+  if (!a || typeof a !== "object") return null;
+  const s = (v: unknown) => String(v ?? "").trim();
+  const out = {
+    name: s(a.name),
+    line1: s(a.addressLine),
+    line2: s(a.addressLine2),
+    city: s(a.city),
+    state: s(a.state),
+    zip: s(a.postalCode),
+    country: s(a.country) || "US",
+  };
   return out.line1 || out.city ? out : null;
+}
+
+// One download per design, even when the design is on four products.
+function toArtwork(items: Json[]): OrderArtwork[] {
+  const seen = new Set<string>();
+  const out: OrderArtwork[] = [];
+  for (const i of items) {
+    const url = typeof i.artworkUrl === "string" ? i.artworkUrl : "";
+    if (!url.startsWith("https://") || seen.has(url)) continue;
+    seen.add(url);
+    out.push({ url, label: "" });
+  }
+  return out.map((a, n) => ({
+    ...a,
+    label: out.length === 1 ? "Download artwork" : `Download artwork ${n + 1}`,
+  }));
 }
 
 function toOrder(o: Json): Order {
@@ -110,10 +165,10 @@ function toOrder(o: Json): Order {
   const designIds = new Set(items.map((i) => i.previewUrl));
   const title =
     items.length === 4 && designIds.size === 1
-      ? 'Buy them all bundle'
+      ? "Buy them all bundle"
       : items.length > 1
         ? `${items[0].title} and ${items.length - 1} more`
-        : String(items[0]?.title ?? 'Your order');
+        : String(items[0]?.title ?? "Your order");
   const firstPreview = items.find((i) => i.previewUrl)?.previewUrl;
   return {
     id: String(o.orderNumber),
@@ -125,18 +180,34 @@ function toOrder(o: Json): Order {
     totalCents: toCents(o.total),
     trackingUrl: (o.trackingUrl as string | undefined) || undefined,
     preview: firstPreview ? { uri: String(firstPreview) } : null,
-    items: items.map((i) => ({ title: String(i.title ?? ''), detail: String(i.detail ?? ''), quantity: Number(i.quantity ?? 1) })),
+    items: items.map((i) => ({
+      title: String(i.title ?? ""),
+      detail: String(i.detail ?? ""),
+      quantity: Number(i.quantity ?? 1),
+    })),
     shipTo: toAddress(o.shipTo as Json | undefined),
     canChangeAddress: o.canChangeAddress === true,
+    artwork: toArtwork(items),
   };
 }
 
-export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetApi {
-  const root = `${baseUrl.replace(/\/$/, '')}/_functions`;
+export function createHttpApi(
+  baseUrl: string,
+  appKey?: string,
+): DesignYourPetApi {
+  const root = `${baseUrl.replace(/\/$/, "")}/_functions`;
 
-  async function call(deviceId: string, path: string, init: RequestInit = {}, fallback: ErrorCode = 'NETWORK'): Promise<Json> {
-    const headers: Record<string, string> = { 'X-Device-Id': deviceId, ...(init.headers as Record<string, string>) };
-    if (appKey) headers['X-App-Key'] = appKey;
+  async function call(
+    deviceId: string,
+    path: string,
+    init: RequestInit = {},
+    fallback: ErrorCode = "NETWORK",
+  ): Promise<Json> {
+    const headers: Record<string, string> = {
+      "X-Device-Id": deviceId,
+      ...(init.headers as Record<string, string>),
+    };
+    if (appKey) headers["X-App-Key"] = appKey;
     let res: Response;
     try {
       res = await fetch(`${root}${path}`, { ...init, headers });
@@ -146,7 +217,11 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
     const body = (await res.json().catch(() => ({}))) as Json;
     if (!res.ok || body.ok !== true) {
       const code = CODE_MAP[String(body.code)] ?? fallback;
-      const error = new ApiError(code, body.message as string | undefined, time(body.unlockAt) ?? undefined);
+      const error = new ApiError(
+        code,
+        body.message as string | undefined,
+        time(body.unlockAt) ?? undefined,
+      );
       error.backendCode = body.code as string | undefined;
       error.details = body;
       throw error;
@@ -155,8 +230,8 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
   }
 
   const post = (body: unknown): RequestInit => ({
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
@@ -165,16 +240,25 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
     // (limits are checked here first), the photo straight to Wix Media, and
     // the file id back for POST /designs.
     async uploadPhoto(deviceId, photo) {
-      const mimeType = photo.mimeType ?? 'image/jpeg';
-      const { uploadUrl } = await call(deviceId, '/uploadUrl', post({ mimeType }), 'UPLOAD_FAILED');
-      const ext = (mimeType.split('/')[1] ?? 'jpg').replace('jpeg', 'jpg');
+      const mimeType = photo.mimeType ?? "image/jpeg";
+      const { uploadUrl } = await call(
+        deviceId,
+        "/uploadUrl",
+        post({ mimeType }),
+        "UPLOAD_FAILED",
+      );
+      const ext = (mimeType.split("/")[1] ?? "jpg").replace("jpeg", "jpg");
       const target = `${String(uploadUrl)}?filename=pet.${ext}`;
       try {
         let status: number;
         let text: string;
-        if (Platform.OS === 'web') {
+        if (Platform.OS === "web") {
           const blob = await (await fetch(photo.uri)).blob();
-          const res = await fetch(target, { method: 'PUT', headers: { 'Content-Type': mimeType }, body: blob });
+          const res = await fetch(target, {
+            method: "PUT",
+            headers: { "Content-Type": mimeType },
+            body: blob,
+          });
           status = res.status;
           text = await res.text();
         } else {
@@ -184,19 +268,19 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
           // arrive at Wix empty. Wix then never finished processing it and
           // Generate failed with "didn't finish uploading".
           const res = await FileSystem.uploadAsync(target, photo.uri, {
-            httpMethod: 'PUT',
+            httpMethod: "PUT",
             uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-            headers: { 'Content-Type': mimeType },
+            headers: { "Content-Type": mimeType },
           });
           status = res.status;
           text = res.body;
         }
         if (status < 200 || status >= 300) throw new Error(`Upload ${status}`);
         const file = (JSON.parse(text) as { file?: { id?: string } }).file;
-        if (!file?.id) throw new Error('No file id');
+        if (!file?.id) throw new Error("No file id");
         return { photoId: file.id };
       } catch {
-        throw new ApiError('UPLOAD_FAILED');
+        throw new ApiError("UPLOAD_FAILED");
       }
     },
 
@@ -205,85 +289,116 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
         fileId: input.photoId,
         style: input.styleId,
         ...(input.text ? { text: input.text } : {}),
-        ...(input.includePeople ? { includePeople: true, peopleConsent: true } : {}),
+        ...(input.includePeople
+          ? { includePeople: true, peopleConsent: true }
+          : {}),
       };
       // Wix may still be processing the photo: wait and ask again. Uses nothing.
       for (let attempt = 0; ; attempt++) {
         try {
-          const res = await call(deviceId, '/designs', post(body));
+          const res = await call(deviceId, "/designs", post(body));
           return { designId: String(res.designId) };
         } catch (e) {
           if (!(e instanceof ApiError)) throw e;
           const details = e.details ?? {};
-          if (e.backendCode === 'upload_not_ready' && attempt < 15) {
+          if (e.backendCode === "upload_not_ready" && attempt < 15) {
             await wait(Number(details.retryAfterMs ?? 2000));
             continue;
           }
           // A design is already being made: carry on with that one.
-          if (e.backendCode === 'one_at_a_time' && details.designId) return { designId: String(details.designId) };
+          if (e.backendCode === "one_at_a_time" && details.designId)
+            return { designId: String(details.designId) };
           throw e;
         }
       }
     },
 
     async getDesign(deviceId, designId) {
-      return toDesign(await call(deviceId, `/designs/${encodeURIComponent(designId)}`));
+      return toDesign(
+        await call(deviceId, `/designs/${encodeURIComponent(designId)}`),
+      );
     },
 
     async listDesigns(deviceId) {
-      const body = await call(deviceId, '/designs');
+      const body = await call(deviceId, "/designs");
       return ((body.designs as Json[]) ?? []).map(toDesign);
     },
 
     async getLimits(deviceId) {
-      const body = await call(deviceId, '/designs');
-      return toLimits(body.allowance as Json | undefined, body.inProgressDesignId);
+      const body = await call(deviceId, "/designs");
+      return toLimits(
+        body.allowance as Json | undefined,
+        body.inProgressDesignId,
+      );
     },
 
     async createCheckout(deviceId, lines: CheckoutLine[]) {
       const items = lines.flatMap((line) =>
-        (line.kind === 'bundle' ? line.choices.map((choice) => ({ choice, quantity: 1 })) : [{ choice: line.choice, quantity: line.quantity }]).map(
-          ({ choice, quantity }) => ({
-            designId: line.designId,
-            productKey: choice.product,
-            ...('color' in choice ? { color: choice.color } : {}),
-            ...('print' in choice && choice.print === 'Back' ? { print: 'Back' } : {}),
-            size: backendSize(choice),
-            quantity,
-          }),
-        ),
+        (line.kind === "bundle"
+          ? line.choices.map((choice) => ({ choice, quantity: 1 }))
+          : [{ choice: line.choice, quantity: line.quantity }]
+        ).map(({ choice, quantity }) => ({
+          designId: line.designId,
+          productKey: choice.product,
+          ...("color" in choice ? { color: choice.color } : {}),
+          ...("print" in choice && choice.print === "Back"
+            ? { print: "Back" }
+            : {}),
+          size: backendSize(choice),
+          quantity,
+        })),
       );
-      const body = await call(deviceId, '/checkout', post({ items }));
-      return { checkoutId: String(body.checkoutId), checkoutUrl: String(body.checkoutUrl) };
+      const body = await call(deviceId, "/checkout", post({ items }));
+      return {
+        checkoutId: String(body.checkoutId),
+        checkoutUrl: String(body.checkoutUrl),
+      };
     },
 
     async getCheckoutStatus(deviceId, checkoutId) {
-      const body = await call(deviceId, `/checkout/${encodeURIComponent(checkoutId)}`);
-      return { completed: body.completed === true, orderNumber: body.orderNumber ? String(body.orderNumber) : null };
+      const body = await call(
+        deviceId,
+        `/checkout/${encodeURIComponent(checkoutId)}`,
+      );
+      return {
+        completed: body.completed === true,
+        orderNumber: body.orderNumber ? String(body.orderNumber) : null,
+      };
     },
 
     async getOrders(deviceId) {
-      const body = await call(deviceId, '/orders');
+      const body = await call(deviceId, "/orders");
       return ((body.orders as Json[]) ?? []).map(toOrder);
     },
 
     async backMockup(deviceId, designId, choice) {
-      if (choice.product !== 'tee' && choice.product !== 'hoodie') return null;
+      if (choice.product !== "tee" && choice.product !== "hoodie") return null;
       try {
         const { taskKey } = await call(
           deviceId,
-          '/mockups',
-          post({ designId, productKey: choice.product, color: choice.color, size: choice.size, print: 'Back' }),
+          "/mockups",
+          post({
+            designId,
+            productKey: choice.product,
+            color: choice.color,
+            size: choice.size,
+            print: "Back",
+          }),
         );
         // Printful usually takes 10 to 30 seconds. Give up after a minute.
         for (let i = 0; i < 24; i++) {
           await wait(2500);
-          const body = await call(deviceId, `/mockups/${encodeURIComponent(String(taskKey))}`);
-          if (body.status === 'failed') return null;
-          if (body.status === 'ready') {
+          const body = await call(
+            deviceId,
+            `/mockups/${encodeURIComponent(String(taskKey))}`,
+          );
+          if (body.status === "failed") return null;
+          if (body.status === "ready") {
             const mockups = (body.mockups as Json[] | undefined) ?? [];
-            const back = mockups.find((m) => String(m.placement).toLowerCase() === 'back');
-            return String(back?.url ?? body.mockupUrl ?? '') || null;
+            const back = mockups.find(
+              (m) => String(m.placement).toLowerCase() === "back",
+            );
+            return String(back?.url ?? body.mockupUrl ?? "") || null;
           }
         }
         return null;
@@ -293,12 +408,20 @@ export function createHttpApi(baseUrl: string, appKey?: string): DesignYourPetAp
     },
 
     async updateOrderAddress(deviceId, orderNumber, a) {
-      const address = { name: a.name, addressLine: a.line1, addressLine2: a.line2, city: a.city, state: a.state, postalCode: a.zip, country: a.country };
-      await call(deviceId, '/orderAddress', post({ orderNumber, address }));
+      const address = {
+        name: a.name,
+        addressLine: a.line1,
+        addressLine2: a.line2,
+        city: a.city,
+        state: a.state,
+        postalCode: a.zip,
+        country: a.country,
+      };
+      await call(deviceId, "/orderAddress", post({ orderNumber, address }));
     },
 
     async reportDesign(deviceId, designId, reason) {
-      await call(deviceId, '/report', post({ designId, reason }));
+      await call(deviceId, "/report", post({ designId, reason }));
     },
   };
 }
