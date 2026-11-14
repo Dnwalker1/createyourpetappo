@@ -41,6 +41,7 @@ export default function Welcome() {
         <Pill tone="dark">About 1 minute</Pill>
         <Pill tone="dark">5 free designs every 24 hours</Pill>
         <Pill tone="dark">No account. No password to forget.</Pill>
+        <Pill tone="dark">Full-size artwork free with every order</Pill>
       </Row>
       <PolicyLinks tone="dark" />
     </Screen>

@@ -117,6 +117,25 @@ export const STYLES: DesignStyle[] = [
 export const PORTRAIT_SITTINGS = ['ROYAL PORTRAIT', 'SCHOOL PICTURE DAY', 'GRADUATION DAY', 'WEDDING PORTRAIT'] as const;
 
 /**
+ * Holiday sittings, offered only in season (added 14 Nov 2026). Each must
+ * match a sitting with the same 'season' in the website's aiDesign.web.js.
+ * Dates are month-day; a season may run across New Year. To add the next
+ * holiday, add one line here and the matching sitting on the website.
+ */
+export const SEASONAL_SITTINGS: { title: string; from: string; until: string }[] = [
+  { title: 'CHRISTMAS PORTRAIT', from: '11-01', until: '12-31' },
+];
+
+/** The sittings to offer today: any holiday sitting in season first, then the year-round ones. */
+export function portraitSittings(now: Date = new Date()): string[] {
+  const today = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const inSeason = SEASONAL_SITTINGS.filter(({ from, until }) =>
+    from <= until ? today >= from && today <= until : today >= from || today <= until,
+  ).map((s) => s.title);
+  return [...inSeason, ...PORTRAIT_SITTINGS];
+}
+
+/**
  * On the Job titles. Must match JOB_TITLES in the website's aiDesign.web.js
  * exactly: the website refuses any title that isn't on its list. The title is
  * lettered on the design's banner, all capitals.

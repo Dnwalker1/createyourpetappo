@@ -66,6 +66,12 @@
       },
       "deleteAccountUrl": "https://www.goodwookie.com/delete-account"
     },
-    "owner": "goodwookies-team"
+    "owner": "goodwookies-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d6df67c0-9a83-4bd4-9185-d0e9f026ac7f"
+    }
   }
 }

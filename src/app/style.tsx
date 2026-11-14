@@ -28,7 +28,7 @@ import {
 import {
   JOB_TITLES,
   MAX_TEXT_LENGTH,
-  PORTRAIT_SITTINGS,
+  portraitSittings,
   STYLES,
   jobLabel,
   styleById,
@@ -160,7 +160,7 @@ export default function Style() {
           accessibilityRole="radiogroup"
           accessibilityLabelledBy="sittingLabel"
         >
-          {PORTRAIT_SITTINGS.map((t) => {
+          {portraitSittings().map((t) => {
             const on = t === sitting;
             return (
               <Pressable
