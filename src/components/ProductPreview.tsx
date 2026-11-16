@@ -43,11 +43,12 @@ export function ProductPreview({ choice, design, size = 220 }: { choice: Product
     const d = size * 0.78;
     return (
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }} accessibilityLabel={`Your design on a round ${name.toLowerCase()}`}>
-        <View style={[styles.string, { height: size - d - 6 }]} />
         <View style={[styles.disc, { width: d, height: d, borderRadius: d / 2, marginBottom: 4 }]}>
           {design ? <Image source={design} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
           <View style={[styles.hole, { top: d * 0.12, left: d / 2 - 6 }]} />
         </View>
+        {/* The string runs down to the hole, drawn over the disc's rim. */}
+        <View style={[styles.string, { position: 'absolute', top: 0, left: size / 2 - 1.5, height: size - 4 - d + d * 0.12 + 6 }]} />
       </View>
     );
   }
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
   hole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: colors.white, borderWidth: 1.5, borderColor: '#C9C4B8' },
   string: { width: 3, backgroundColor: '#C79A3E', borderRadius: 2 },
   mug: { backgroundColor: colors.white, borderRadius: 14, borderBottomLeftRadius: 22, borderBottomRightRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#E4E1DA', shadowColor: colors.navy, shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
-  handle: { borderWidth: 10, borderLeftWidth: 0, borderColor: colors.white, borderTopRightRadius: 40, borderBottomRightRadius: 40, shadowColor: colors.navy, shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 4 } },
+  handle: { borderWidth: 9, borderLeftWidth: 0, borderColor: '#DCD7CB', borderTopRightRadius: 40, borderBottomRightRadius: 40, shadowColor: colors.navy, shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 4 } },
   sheet: {
     backgroundColor: colors.white,
     shadowColor: colors.navy,

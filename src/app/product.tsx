@@ -18,6 +18,8 @@ function sizeNote(id: ProductId, print?: PrintSide): string {
     const extra = print === 'Back' ? p.backExtraCents : 0;
     return `2XL ${formatMoney(p.priceCents['2XL'] + extra)} · 3XL ${formatMoney(p.priceCents['3XL'] + extra)}`;
   }
+  // One-size products (ornament, mug) just show the price: "11 $20.00" read oddly.
+  if (p.sizes.length === 1) return formatMoney(p.sizes[0].priceCents);
   return p.sizes.map((s) => `${s.label.split(' ')[0]} ${formatMoney(s.priceCents)}`).join(' · ');
 }
 
