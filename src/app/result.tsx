@@ -6,7 +6,7 @@ import { BundleCard } from '../components/BundleCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { ProductPreview } from '../components/ProductPreview';
 import { ReportDesign } from '../components/ReportDesign';
-import { DEFAULT_CHOICES, PRODUCT_ORDER, PRODUCTS, priceRange, styleById } from '../data/catalog';
+import { DEFAULT_CHOICES, PRODUCTS, priceRange, productOrder, styleById } from '../data/catalog';
 import { formatRange } from '../lib/money';
 import { useLimits } from '../lib/useLimits';
 import { useAppState } from '../state/AppState';
@@ -64,7 +64,7 @@ export default function Result() {
         Pick your product
       </Text>
       <View style={{ gap: 8 }}>
-        {PRODUCT_ORDER.map((id) => (
+        {productOrder().map((id) => (
           <Pressable
             key={id}
             accessibilityRole="button"

@@ -115,6 +115,11 @@ export function createMockApi(now: () => number = Date.now): DesignYourPetApi {
       return { completed: Boolean(order), orderNumber: order?.number ?? null };
     },
 
+    async getProducts() {
+      // The mock has no website, so the built-in prices stand.
+      return [];
+    },
+
     async getOrders() {
       return [...orders.values()].sort((a, b) => b.createdAt - a.createdAt);
     },

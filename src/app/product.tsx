@@ -7,7 +7,7 @@ import { ImageViewer } from '../components/ImageViewer';
 import { ColorPicker, SizePicker } from '../components/Pickers';
 import { ProductPreview } from '../components/ProductPreview';
 import { Body, Button, Screen, TitleBar } from '../components/ui';
-import { DEFAULT_CHOICES, PRINT_SIDES, PRODUCT_ORDER, PRODUCTS, PrintSide, ProductChoice, ProductId, priceCents, productDescription } from '../data/catalog';
+import { DEFAULT_CHOICES, PRINT_SIDES, PRODUCTS, productOrder, PrintSide, ProductChoice, ProductId, priceCents, productDescription } from '../data/catalog';
 import { formatMoney } from '../lib/money';
 import { useAppState } from '../state/AppState';
 import { colors, fonts } from '../theme';
@@ -48,7 +48,7 @@ export default function Product() {
     >
       <TitleBar title={product.name} right={<Text style={styles.price}>{formatMoney(priceCents(choice))}</Text>} />
       <View style={styles.tabs} accessibilityRole="tablist">
-        {PRODUCT_ORDER.map((id) => {
+        {productOrder().map((id) => {
           const on = id === current;
           return (
             <Pressable key={id} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => setCurrent(id)} style={[styles.tab, on && styles.tabOn]}>
@@ -120,8 +120,9 @@ export default function Product() {
 
 const styles = StyleSheet.create({
   price: { fontFamily: fonts.display, fontSize: 20, color: colors.navy },
-  tabs: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 14, backgroundColor: colors.agedCream },
-  tab: { flex: 1, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  // Wraps to two rows of three now there are six products (16 Nov 2026).
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, padding: 4, borderRadius: 14, backgroundColor: colors.agedCream },
+  tab: { flexGrow: 1, flexBasis: '31%', height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   tabOn: { backgroundColor: colors.navy },
   tabText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.navy },
   preview: { height: 220, borderRadius: 20, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.agedCream, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

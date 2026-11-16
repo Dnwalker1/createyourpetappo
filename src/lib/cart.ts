@@ -1,4 +1,4 @@
-import { BUNDLE_DISCOUNT, ProductChoice, priceCents } from '../data/catalog';
+import { BUNDLE_DISCOUNT, FlatId, ProductChoice, priceCents } from '../data/catalog';
 import type { ImageSourcePropType } from 'react-native';
 import type { StyleId } from '../data/catalog';
 import { discountCents } from './money';
@@ -6,8 +6,8 @@ import { discountCents } from './money';
 export type BundleChoices = {
   tee: Extract<ProductChoice, { product: 'tee' | 'hoodie' }>;
   hoodie: Extract<ProductChoice, { product: 'tee' | 'hoodie' }>;
-  sticker: Extract<ProductChoice, { product: 'sticker' | 'poster' }>;
-  poster: Extract<ProductChoice, { product: 'sticker' | 'poster' }>;
+  sticker: Extract<ProductChoice, { product: FlatId }>;
+  poster: Extract<ProductChoice, { product: FlatId }>;
 };
 
 type ItemBase = { id: string; designId: string; styleId: StyleId; preview: ImageSourcePropType | null };

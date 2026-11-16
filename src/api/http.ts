@@ -366,6 +366,21 @@ export function createHttpApi(
       };
     },
 
+    async getProducts(deviceId) {
+      try {
+        const body = await call(deviceId, "/products");
+        return ((body.products as Json[]) ?? [])
+          .filter((p) => typeof p.key === "string")
+          .map((p) => ({
+            key: p.key as string,
+            prices: (p.prices as Record<string, number> | null) ?? null,
+            backPrices: (p.backPrices as Record<string, number> | null) ?? null,
+          }));
+      } catch {
+        return [];
+      }
+    },
+
     async getOrders(deviceId) {
       const body = await call(deviceId, "/orders");
       return ((body.orders as Json[]) ?? []).map(toOrder);

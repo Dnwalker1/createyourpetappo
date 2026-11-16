@@ -1,5 +1,5 @@
 import type { ImageSourcePropType } from "react-native";
-import type { ProductChoice, StyleId } from "../data/catalog";
+import type { ProductChoice, ServerProduct, StyleId } from "../data/catalog";
 import type { DesignStatus, LimitBlock } from "../lib/limits";
 
 // The contract between the app and the Goodwookie website backend.
@@ -148,6 +148,12 @@ export interface DesignYourPetApi {
     deviceId: string,
     checkoutId: string,
   ): Promise<{ completed: boolean; orderNumber: string | null }>;
+  /**
+   * The website's current products and prices (16 Nov 2026), so a price change
+   * in Wix reaches the app without an update. Resolves [] when unreachable;
+   * the app then keeps the prices it was built with.
+   */
+  getProducts(deviceId: string): Promise<ServerProduct[]>;
   /** Every order placed from this device, newest first. */
   getOrders(deviceId: string): Promise<Order[]>;
   /**

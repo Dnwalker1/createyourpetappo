@@ -37,6 +37,36 @@ export function ProductPreview({ choice, design, size = 220 }: { choice: Product
       </View>
     );
   }
+  // Ornament (16 Nov 2026): a white ceramic disc, the design filling it and the
+  // circle trimming its corners, as it prints, with the hanging hole and string.
+  if (choice.product === 'ornament') {
+    const d = size * 0.78;
+    return (
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }} accessibilityLabel={`Your design on a round ${name.toLowerCase()}`}>
+        <View style={[styles.string, { height: size - d - 6 }]} />
+        <View style={[styles.disc, { width: d, height: d, borderRadius: d / 2, marginBottom: 4 }]}>
+          {design ? <Image source={design} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
+          <View style={[styles.hole, { top: d * 0.12, left: d / 2 - 6 }]} />
+        </View>
+      </View>
+    );
+  }
+  // Mug (16 Nov 2026): a white mug with the handle on the right, so the design
+  // is the side the drinker sees. The logo is on the back, out of view.
+  if (choice.product === 'mug') {
+    const w = size * 0.6;
+    const h = size * 0.66;
+    return (
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel={`Your design on a ${name.toLowerCase()}`}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={[styles.mug, { width: w, height: h }]}>
+            {design ? <Image source={design} style={{ width: w * 0.78, height: h * 0.78 }} contentFit="contain" /> : null}
+          </View>
+          <View style={[styles.handle, { width: size * 0.17, height: h * 0.55, marginLeft: -4 }]} />
+        </View>
+      </View>
+    );
+  }
   // Sticker and poster: scale the sheet with the chosen size.
   const sizes = PRODUCTS[choice.product].kind === 'flat' ? (PRODUCTS[choice.product] as { sizes: { id: string }[] }).sizes : [];
   const index = Math.max(0, sizes.findIndex((s) => s.id === choice.size));
@@ -53,6 +83,11 @@ export function ProductPreview({ choice, design, size = 220 }: { choice: Product
 }
 
 const styles = StyleSheet.create({
+  disc: { backgroundColor: colors.white, overflow: 'hidden', borderWidth: 2, borderColor: '#E4E1DA', shadowColor: colors.navy, shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
+  hole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: colors.white, borderWidth: 1.5, borderColor: '#C9C4B8' },
+  string: { width: 3, backgroundColor: '#C79A3E', borderRadius: 2 },
+  mug: { backgroundColor: colors.white, borderRadius: 14, borderBottomLeftRadius: 22, borderBottomRightRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#E4E1DA', shadowColor: colors.navy, shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
+  handle: { borderWidth: 10, borderLeftWidth: 0, borderColor: colors.white, borderTopRightRadius: 40, borderBottomRightRadius: 40, shadowColor: colors.navy, shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 4 } },
   sheet: {
     backgroundColor: colors.white,
     shadowColor: colors.navy,

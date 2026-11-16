@@ -175,7 +175,8 @@ export function styleById(id: StyleId): DesignStyle {
   return style;
 }
 
-export type ProductId = 'tee' | 'hoodie' | 'sticker' | 'poster';
+export type ProductId = 'tee' | 'hoodie' | 'sticker' | 'poster' | 'ornament' | 'mug';
+export type FlatId = 'sticker' | 'poster' | 'ornament' | 'mug';
 export type ApparelSize = 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL';
 export const APPAREL_SIZES: ApparelSize[] = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
 
@@ -203,7 +204,7 @@ type ApparelProduct = {
 };
 
 type FlatProduct = {
-  id: 'sticker' | 'poster';
+  id: FlatId;
   kind: 'flat';
   name: string;
   printfulItem: string;
@@ -278,9 +279,50 @@ export const PRODUCTS: Record<ProductId, Product> = {
       { id: '18x18', label: '18″ × 18″', priceCents: 2950 },
     ],
   },
+  // Added 16 Nov 2026 (first sold on the website 14 Nov). One size each; the
+  // size ids match the website's productCatalog.js exactly.
+  ornament: {
+    id: 'ornament',
+    kind: 'flat',
+    name: 'Ornament',
+    printfulItem: 'Ceramic ornament, circle',
+    description: 'Glossy round ceramic ornament, 2.76″ across, with a gold string. Your design fills the circle.',
+    sizes: [{ id: 'Circle', label: 'Round, 2.76″', priceCents: 1900 }],
+  },
+  mug: {
+    id: 'mug',
+    kind: 'flat',
+    name: 'Mug',
+    printfulItem: 'White glossy mug, 11 oz',
+    description: 'White glossy 11 oz ceramic mug. Your design faces you while you drink; the Goodwookie logo is on the other side.',
+    sizes: [{ id: '11 oz', label: '11 oz', priceCents: 2000 }],
+  },
 };
 
-export const PRODUCT_ORDER: ProductId[] = ['tee', 'hoodie', 'sticker', 'poster'];
+const ALL_PRODUCTS: ProductId[] = ['tee', 'hoodie', 'sticker', 'poster', 'ornament', 'mug'];
+
+/**
+ * Seasonal products, offered only between these month-days (a season may run
+ * across New Year). The ornament is sold for Christmas (Don, 14 Nov 2026).
+ */
+export const SEASONAL_PRODUCTS: Partial<Record<ProductId, { from: string; until: string }>> = {
+  ornament: { from: '11-01', until: '12-31' },
+};
+
+function inSeason(id: ProductId, now: Date): boolean {
+  const season = SEASONAL_PRODUCTS[id];
+  if (!season) return true;
+  const today = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return season.from <= season.until ? today >= season.from && today <= season.until : today >= season.from || today <= season.until;
+}
+
+/** The products to offer today, in order. */
+export function productOrder(now: Date = new Date()): ProductId[] {
+  return ALL_PRODUCTS.filter((id) => inSeason(id, now));
+}
+
+/** Kept for anything that wants the list as it is right now. */
+export const PRODUCT_ORDER: ProductId[] = productOrder();
 
 // The bundle discount is an automatic discount in the Wix store. The app only
 // estimates it for display; Wix applies the real one at checkout.
@@ -289,7 +331,7 @@ export const BUNDLE_DISCOUNT = 0.1;
 // What a customer picks for one product.
 export type ProductChoice =
   | { product: 'tee' | 'hoodie'; color: string; size: ApparelSize; print?: PrintSide }
-  | { product: 'sticker' | 'poster'; size: string };
+  | { product: FlatId; size: string };
 
 export function priceCents(choice: ProductChoice): number {
   const product = PRODUCTS[choice.product];
@@ -342,4 +384,56 @@ export const DEFAULT_CHOICES: Record<ProductId, ProductChoice> = {
   hoodie: { product: 'hoodie', color: 'Bone', size: 'L' },
   sticker: { product: 'sticker', size: '4x4' },
   poster: { product: 'poster', size: '16x16' },
+  ornament: { product: 'ornament', size: 'Circle' },
+  mug: { product: 'mug', size: '11 oz' },
 };
+
+// ── PRICES FROM THE WEBSITE (added 16 Nov 2026) ─────────────────────────────
+// The prices above are only the starting point. On launch the app asks the
+// website for its live Wix prices (GET /_functions/products) and replaces
+// them, so a price change in Wix needs no app update. Anything odd in the
+// answer is ignored and the built-in price stays.
+
+export type ServerProduct = {
+  key: string;
+  prices?: Record<string, number> | null;
+  backPrices?: Record<string, number> | null;
+};
+
+const sizeKey = (s: string) => s.toLowerCase().replace(/×/g, 'x').replace(/[^a-z0-9.]/g, '');
+const sane = (v: unknown): number | null => (typeof v === 'number' && v > 0 && v < 1000 ? Math.round(v * 100) : null);
+
+/** Applies the website's prices. Returns how many prices changed. */
+export function applyServerPrices(list: ServerProduct[]): number {
+  let changed = 0;
+  for (const sp of list) {
+    const product = PRODUCTS[sp.key as ProductId];
+    if (!product || !sp.prices) continue;
+    const prices = Object.fromEntries(Object.entries(sp.prices).map(([k, v]) => [sizeKey(k), sane(v)]));
+    if (product.kind === 'apparel') {
+      for (const size of APPAREL_SIZES) {
+        const cents = prices[sizeKey(size)];
+        if (cents && cents !== product.priceCents[size]) {
+          product.priceCents[size] = cents;
+          changed++;
+        }
+      }
+      const back = sp.backPrices ? sane(sp.backPrices.L ?? sp.backPrices.M) : null;
+      const front = prices.l ?? prices.m;
+      if (back && front && back > front && back - front !== product.backExtraCents) {
+        product.backExtraCents = back - front;
+        changed++;
+      }
+    } else {
+      const only = product.sizes.length === 1 ? Object.values(prices).filter(Boolean) : [];
+      for (const size of product.sizes) {
+        const cents = prices[sizeKey(size.id)] ?? (only.length === 1 ? only[0] : null);
+        if (cents && cents !== size.priceCents) {
+          size.priceCents = cents;
+          changed++;
+        }
+      }
+    }
+  }
+  return changed;
+}

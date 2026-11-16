@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, Design, PhotoInput } from '../api';
-import type { StyleId } from '../data/catalog';
+import { applyServerPrices, type StyleId } from '../data/catalog';
 import type { CartItem, NewCartItem } from '../lib/cart';
 
 const KEYS = { deviceId: 'dyp.deviceId', cart: 'dyp.cart', photo: 'dyp.photo' };
@@ -32,6 +32,8 @@ type AppState = {
   /** The design shown on the result, product and bundle screens. */
   activeDesign: Design | null;
   cart: CartItem[];
+  /** Goes up each time the website's prices are applied, so price labels redraw. */
+  pricesVersion: number;
   setPhoto: (photo: PhotoInput | null) => void;
   setStyleId: (id: StyleId) => void;
   /** The On the Job title picked on the style screen ('' when none). */
@@ -79,6 +81,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [peopleConsent, setPeopleConsent] = useState(false);
   const [activeDesign, setActiveDesign] = useState<Design | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [pricesVersion, setPricesVersion] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -97,6 +100,23 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setReady(true);
     })();
   }, []);
+
+  // Prices come from the website at launch (16 Nov 2026), so a Wix price change
+  // needs no app update. Offline or slow, the built-in prices stand; checkout
+  // always charges the real Wix price either way.
+  useEffect(() => {
+    if (!deviceId) return;
+    let live = true;
+    api
+      .getProducts(deviceId)
+      .then((list) => {
+        if (live && applyServerPrices(list) > 0) setPricesVersion((v) => v + 1);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [deviceId]);
 
   useEffect(() => {
     if (ready) AsyncStorage.setItem(KEYS.cart, JSON.stringify(cart)).catch(() => undefined);
@@ -159,6 +179,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       peopleConsent,
       activeDesign,
       cart,
+      pricesVersion,
       setPhoto,
       setStyleId,
       job,
@@ -179,7 +200,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeFromCart: (id) => setCart((c) => c.filter((i) => i.id !== id)),
       clearCart: () => setCart([]),
     }),
-    [ready, deviceId, photo, styleId, job, sitting, text, includePeople, peopleConsent, activeDesign, cart, setPhoto, setIncludePeople, ensureUploaded, startDesign],
+    [ready, deviceId, photo, styleId, job, sitting, text, includePeople, peopleConsent, activeDesign, cart, pricesVersion, setPhoto, setIncludePeople, ensureUploaded, startDesign],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
