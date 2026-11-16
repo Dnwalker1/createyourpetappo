@@ -68,7 +68,7 @@ describe('bundle pricing', () => {
 
 describe('price ranges', () => {
   it('matches the product list', () => {
-    expect(formatRange(priceRange('tee'))).toBe('$26–$36');
+    expect(formatRange(priceRange('tee'))).toBe('$26–$39');
     expect(formatRange(priceRange('hoodie'))).toBe('$55.50–$67.50');
     expect(formatRange(priceRange('sticker'))).toBe('$11.50–$12');
     expect(formatRange(priceRange('poster'))).toBe('$24–$29.50');
@@ -76,9 +76,9 @@ describe('price ranges', () => {
 });
 
 describe('back print', () => {
-  it('adds $5 to a tee and $7 to a hoodie', () => {
-    expect(priceCents({ product: 'tee', color: 'White', size: 'L', print: 'Back' })).toBe(3100);
-    expect(priceCents({ product: 'tee', color: 'White', size: '3XL', print: 'Back' })).toBe(3600);
+  it('adds $8 to a tee and $7 to a hoodie', () => {
+    expect(priceCents({ product: 'tee', color: 'White', size: 'L', print: 'Back' })).toBe(3400);
+    expect(priceCents({ product: 'tee', color: 'White', size: '3XL', print: 'Back' })).toBe(3900);
     expect(priceCents({ product: 'hoodie', color: 'Bone', size: 'L', print: 'Back' })).toBe(6250);
     expect(priceCents({ product: 'tee', color: 'White', size: 'L', print: 'Front' })).toBe(2600);
     expect(priceCents({ product: 'tee', color: 'White', size: 'L' })).toBe(2600);

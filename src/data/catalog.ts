@@ -231,7 +231,8 @@ export const PRODUCTS: Record<ProductId, Product> = {
       { name: 'Athletic Heather', hex: '#C4C5C0', mockup: require('../../assets/images/mockups/tee-athletic-heather.webp') },
     ],
     priceCents: { S: 2600, M: 2600, L: 2600, XL: 2600, '2XL': 2850, '3XL': 3100 },
-    backExtraCents: 500,
+    // Back print costs $8 more (Wix "Design Your Pet Tee - Back Print": $34 / 2XL $36.50 / 3XL $39, 15 Nov 2026).
+    backExtraCents: 800,
   },
   hoodie: {
     id: 'hoodie',
