@@ -31,6 +31,11 @@ const PRIVACY_URL: string =
   Constants.expoConfig?.extra?.privacyPolicyUrl ??
   "https://www.goodwookie.com/terms-and-conditions";
 
+function photoShape(p: { width?: number; height?: number }): number {
+  const r = p.width && p.height ? p.width / p.height : 3 / 4;
+  return Math.min(2, Math.max(0.8, r));
+}
+
 export default function Upload() {
   const { photo, setPhoto, uploadPhoto } = useAppState();
   const { again } = useLocalSearchParams<{ again?: string }>();
@@ -64,6 +69,8 @@ export default function Upload() {
       uri: a.uri,
       mimeType: a.mimeType ?? undefined,
       fileName: a.fileName ?? undefined,
+      width: a.width || undefined,
+      height: a.height || undefined,
     });
   }
 
@@ -104,12 +111,14 @@ export default function Upload() {
         </Body>
       </View>
 
-      <View style={styles.drop}>
+      {/* The whole photo shows (19 Nov 2026): the box takes the photo's shape,
+          kept between 4:5 tall and 2:1 wide, and the photo is never cropped. */}
+      <View style={[styles.drop, photo ? { height: undefined, aspectRatio: photoShape(photo) } : null]}>
         {photo ? (
           <Image
             source={{ uri: photo.uri }}
             style={StyleSheet.absoluteFill}
-            contentFit="cover"
+            contentFit="contain"
             accessibilityLabel="Your pet photo"
           />
         ) : (

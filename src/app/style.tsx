@@ -69,6 +69,11 @@ export default function Style() {
   // the page is the card's position plus the field's position in the card.
   const cardY = useRef(0);
   const textY = useRef(0);
+  // Set when the customer taps a style card, so only a tap scrolls the page.
+  const picked = useRef(false);
+  // Where the list of cards starts on the page; a card's own position is
+  // measured from here.
+  const groupY = useRef(0);
   const [viewing, setViewing] = useState<DesignStyle | null>(null);
   // Two pictures side by side in each card: the design and the design on a
   // shirt. Page width less the page and card padding, split in two.
@@ -77,7 +82,7 @@ export default function Style() {
   function showTextField() {
     const scroll = () =>
       scrollRef.current?.scrollTo({
-        y: Math.max(0, cardY.current + textY.current - 24),
+        y: Math.max(0, groupY.current + cardY.current + textY.current - 24),
         animated: true,
       });
     // Wait for the keyboard to finish opening, then scroll.
@@ -86,6 +91,46 @@ export default function Style() {
       scroll();
     });
     setTimeout(scroll, 350);
+  }
+
+  // The people switch (moved 19 Nov 2026) sits inside the chosen style's card,
+  // under its own choices, so it's on screen right after a style is picked
+  // instead of below all eight cards.
+  function renderPeople() {
+    return (
+      <View style={styles.people}>
+        <View style={styles.peopleRow}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text nativeID="peopleLabel" style={styles.fieldLabel}>
+              Include the people in my photo
+            </Text>
+            <Body style={{ fontSize: 14 }}>
+              {includePeople
+                ? "Everyone in the photo is drawn together with your pets."
+                : "Off: only your pets are drawn."}
+            </Body>
+          </View>
+          <Switch
+            accessibilityLabelledBy="peopleLabel"
+            accessibilityLabel="Include the people in my photo"
+            value={includePeople}
+            onValueChange={setIncludePeople}
+            trackColor={{ false: colors.agedCream, true: colors.navy }}
+            thumbColor={colors.white}
+            ios_backgroundColor={colors.agedCream}
+          />
+        </View>
+        {includePeople ? (
+          <Checkbox checked={peopleConsent} onChange={setPeopleConsent}>
+            <Text style={styles.consentText}>
+              Everyone in this photo is 13 or older, fully clothed, and agreed
+              to be in it. I&apos;m the parent or guardian of anyone under 18,
+              or have their permission.
+            </Text>
+          </Checkbox>
+        ) : null}
+      </View>
+    );
   }
 
   async function generate() {
@@ -299,7 +344,11 @@ export default function Style() {
           side by side, the name centred above. The chosen card opens to show
           its own choices — a job, a portrait, or the name — right under its
           pictures. Tap a picture to see it bigger. */}
-      <View style={{ gap: 14 }} accessibilityRole="radiogroup">
+      <View
+        style={{ gap: 14 }}
+        accessibilityRole="radiogroup"
+        onLayout={(e) => (groupY.current = e.nativeEvent.layout.y)}
+      >
         {STYLES.map((s) => {
           const on = s.id === styleId;
           return (
@@ -311,9 +360,23 @@ export default function Style() {
               onPress={() => {
                 setStyleId(s.id);
                 setTextError(null);
+                picked.current = true;
               }}
               onLayout={
-                on ? (e) => (cardY.current = e.nativeEvent.layout.y) : undefined
+                on
+                  ? (e) => {
+                      cardY.current = e.nativeEvent.layout.y;
+                      // After a tap, bring the opened card (its choices and the
+                      // people switch) to the top of the screen.
+                      if (picked.current) {
+                        picked.current = false;
+                        scrollRef.current?.scrollTo({
+                          y: Math.max(0, groupY.current + cardY.current - 12),
+                          animated: true,
+                        });
+                      }
+                    }
+                  : undefined
               }
               style={[styles.card, on ? styles.cardOn : null]}
             >
@@ -344,44 +407,14 @@ export default function Style() {
               </View>
               <Body style={styles.blurb}>{s.blurb}</Body>
               {on ? (
-                <View style={styles.options}>{renderOptions()}</View>
+                <View style={styles.options}>
+                  {renderOptions()}
+                  {renderPeople()}
+                </View>
               ) : null}
             </Pressable>
           );
         })}
-      </View>
-
-      <View style={styles.people}>
-        <View style={styles.peopleRow}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text nativeID="peopleLabel" style={styles.fieldLabel}>
-              Include the people in my photo
-            </Text>
-            <Body style={{ fontSize: 14 }}>
-              {includePeople
-                ? "Everyone in the photo is drawn together with your pets."
-                : "Off: only your pets are drawn."}
-            </Body>
-          </View>
-          <Switch
-            accessibilityLabelledBy="peopleLabel"
-            accessibilityLabel="Include the people in my photo"
-            value={includePeople}
-            onValueChange={setIncludePeople}
-            trackColor={{ false: colors.agedCream, true: colors.navy }}
-            thumbColor={colors.white}
-            ios_backgroundColor={colors.agedCream}
-          />
-        </View>
-        {includePeople ? (
-          <Checkbox checked={peopleConsent} onChange={setPeopleConsent}>
-            <Text style={styles.consentText}>
-              Everyone in this photo is 13 or older, fully clothed, and agreed
-              to be in it. I&apos;m the parent or guardian of anyone under 18,
-              or have their permission.
-            </Text>
-          </Checkbox>
-        ) : null}
       </View>
 
       {inProgress ? (

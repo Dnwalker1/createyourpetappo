@@ -63,7 +63,14 @@ export type Limits = {
   unlocksAt: number | null;
 };
 
-export type PhotoInput = { uri: string; mimeType?: string; fileName?: string };
+export type PhotoInput = {
+  uri: string;
+  mimeType?: string;
+  fileName?: string;
+  /** Pixel size, so the upload box can take the photo's shape (19 Nov 2026). */
+  width?: number;
+  height?: number;
+};
 
 export type CheckoutLine =
   | {

@@ -4,18 +4,28 @@ import { Pressable, StyleSheet } from 'react-native';
 import { Body, Button, H1, Pill, Row, Screen } from '../components/ui';
 import { PolicyLinks } from '../components/PolicyLinks';
 import { STYLES } from '../data/catalog';
+import { useAppState } from '../state/AppState';
 import { fonts } from '../theme';
 
 const badge = require('../../assets/images/brand/badge-logo.webp');
 
 export default function Welcome() {
   const [stamp, , evening, sticker] = STYLES;
+  const { setPhoto } = useAppState();
   return (
     <Screen
       tone="dark"
       footer={
         <>
-          <Button title="Get started" onPress={() => router.push('/upload')} />
+          <Button
+            title="Get started"
+            onPress={() => {
+              // A fresh start begins with an empty photo box (19 Nov 2026). The last
+              // photo is only kept for "Try another style" on the result screen.
+              setPhoto(null);
+              router.push('/upload');
+            }}
+          />
           <Button variant="dark-secondary" title={`See all ${STYLES.length} styles`} onPress={() => router.push('/styles')} />
           <Button variant="dark-secondary" title="See your designs" onPress={() => router.push('/designs')} />
         </>

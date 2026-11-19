@@ -15,7 +15,9 @@ const KEYS = { deviceId: 'dyp.deviceId', cart: 'dyp.cart', photo: 'dyp.photo' };
 // to step one to pick it again. Now the photo (a file on this phone) and its
 // upload ID are saved, and forgotten after 24 hours or when they choose a new
 // photo. The website keeps the uploaded photo for a day too.
-const PHOTO_KEEP_MS = 24 * 60 * 60 * 1000;
+// 19 Nov 2026: "Get started" on the welcome screen now clears it, so the old
+// photo only comes back through "Try another style", and only for 6 hours.
+const PHOTO_KEEP_MS = 6 * 60 * 60 * 1000;
 type SavedPhoto = { photo: PhotoInput; photoId: string | null; savedAt: number };
 
 type AppState = {
