@@ -27,6 +27,7 @@ const CODE_MAP: Record<string, ErrorCode> = {
   studio_busy: "STUDIO_BUSY",
   one_at_a_time: "DESIGN_IN_PROGRESS",
   text_rejected: "TEXT_REJECTED",
+  notes_rejected: "NOTES_REJECTED",
   text_checker_down: "TEXT_CHECKER_DOWN",
   bad_photo: "UPLOAD_FAILED",
   bad_photo_type: "UPLOAD_FAILED",
@@ -289,6 +290,7 @@ export function createHttpApi(
         fileId: input.photoId,
         style: input.styleId,
         ...(input.text ? { text: input.text } : {}),
+        ...(input.petNotes ? { petNotes: input.petNotes } : {}),
         ...(input.includePeople
           ? { includePeople: true, peopleConsent: true }
           : {}),

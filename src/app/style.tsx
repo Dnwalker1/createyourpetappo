@@ -39,6 +39,9 @@ import { allowedTextOnly } from "../lib/designText";
 import { useAppState } from "../state/AppState";
 import { colors, fonts } from "../theme";
 
+// Must match MAX_PET_NOTES_LENGTH in aiDesign.web.js.
+const MAX_NOTES_LENGTH = 120;
+
 export default function Style() {
   const {
     photo,
@@ -54,10 +57,13 @@ export default function Style() {
     setIncludePeople,
     peopleConsent,
     setPeopleConsent,
+    petNotes,
+    setPetNotes,
     startDesign,
   } = useAppState();
   const [busy, setBusy] = useState(false);
   const [textError, setTextError] = useState<string | null>(null);
+  const [notesError, setNotesError] = useState<string | null>(null);
   const [inProgress, setInProgress] = useState(false);
   const [checkerBusy, setCheckerBusy] = useState(false);
   const style = styleById(styleId);
@@ -74,11 +80,27 @@ export default function Style() {
   // Where the list of cards starts on the page; a card's own position is
   // measured from here.
   const groupY = useRef(0);
+  // The chosen card's options box, and the notes field inside it.
+  const optionsY = useRef(0);
+  const notesY = useRef(0);
   const [viewing, setViewing] = useState<DesignStyle | null>(null);
   // Two pictures side by side in each card: the design and the design on a
   // shirt. Page width less the page and card padding, split in two.
   const { width } = useWindowDimensions();
   const tile = Math.floor((Math.min(width, 520) - 48 - 24 - 6 - 10) / 2);
+  // Scrolls a field inside the chosen card above the keyboard.
+  function showField(yInCard: number) {
+    const scroll = () =>
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, groupY.current + cardY.current + optionsY.current + yInCard - 24),
+        animated: true,
+      });
+    const sub = Keyboard.addListener("keyboardDidShow", () => {
+      sub.remove();
+      scroll();
+    });
+    setTimeout(scroll, 350);
+  }
   function showTextField() {
     const scroll = () =>
       scrollRef.current?.scrollTo({
@@ -96,6 +118,55 @@ export default function Style() {
   // The people switch (moved 19 Nov 2026) sits inside the chosen style's card,
   // under its own choices, so it's on screen right after a style is picked
   // instead of below all eight cards.
+  // PET NOTES (21 Nov 2026): what the photo can't show, like a docked tail
+  // that's hard to see. Optional, kept with the photo, checked on the server.
+  function renderNotes() {
+    return (
+      <View
+        style={{ gap: 6 }}
+        onLayout={(e) => (notesY.current = e.nativeEvent.layout.y)}
+      >
+        <View style={styles.labelRow}>
+          <Text nativeID="notesLabel" style={styles.fieldLabel}>
+            About your pet (optional)
+          </Text>
+          <Text style={styles.counter}>
+            {petNotes.length} / {MAX_NOTES_LENGTH}
+          </Text>
+        </View>
+        <TextInput
+          accessibilityLabelledBy="notesLabel"
+          accessibilityLabel="About your pet"
+          value={petNotes}
+          onChangeText={(t) => {
+            setPetNotes(t.slice(0, MAX_NOTES_LENGTH));
+            setNotesError(null);
+          }}
+          maxLength={MAX_NOTES_LENGTH}
+          onFocus={() => showField(notesY.current)}
+          returnKeyType="done"
+          blurOnSubmit
+          placeholder="e.g. docked tail, cropped ears"
+          placeholderTextColor={colors.slate}
+          style={[
+            styles.input,
+            notesError ? { borderColor: colors.error, borderWidth: 2 } : null,
+          ]}
+        />
+        {notesError ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {notesError}
+          </Text>
+        ) : (
+          <Body style={{ fontSize: 14 }}>
+            Anything the photo might not show clearly, like a docked tail or a
+            missing leg.
+          </Body>
+        )}
+      </View>
+    );
+  }
+
   function renderPeople() {
     return (
       <View style={styles.people}>
@@ -136,13 +207,18 @@ export default function Style() {
   async function generate() {
     setBusy(true);
     setTextError(null);
+    setNotesError(null);
     setInProgress(false);
     setCheckerBusy(false);
     try {
       const designId = await startDesign();
       router.push({ pathname: "/generating", params: { designId } });
     } catch (e) {
-      if (e instanceof ApiError && e.code === "TEXT_REJECTED") {
+      if (e instanceof ApiError && e.code === "NOTES_REJECTED") {
+        setNotesError(
+          'Pet notes can only describe how your pet looks, like "docked tail" or "one ear flops".',
+        );
+      } else if (e instanceof ApiError && e.code === "TEXT_REJECTED") {
         setTextError(
           "That one can't go on a shirt. It reads as a trademark or a word we don't print. Try your pet's actual name.",
         );
@@ -407,8 +483,12 @@ export default function Style() {
               </View>
               <Body style={styles.blurb}>{s.blurb}</Body>
               {on ? (
-                <View style={styles.options}>
+                <View
+                  style={styles.options}
+                  onLayout={(e) => (optionsY.current = e.nativeEvent.layout.y)}
+                >
                   {renderOptions()}
+                  {renderNotes()}
                   {renderPeople()}
                 </View>
               ) : null}

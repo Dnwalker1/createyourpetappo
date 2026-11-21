@@ -11,6 +11,7 @@ export type ErrorCode =
   | "NO_PET"
   | "PHOTO_REJECTED"
   | "TEXT_REJECTED"
+  | "NOTES_REJECTED"
   | "DESIGN_FAILED"
   | "LIMIT_REACHED"
   | "TRIES_LIMIT"
@@ -139,6 +140,8 @@ export interface DesignYourPetApi {
       styleId: StyleId;
       text?: string;
       includePeople?: boolean;
+      /** The owner's note on how the pet looks, e.g. "docked tail" (21 Nov 2026). */
+      petNotes?: string;
     },
   ): Promise<{ designId: string }>;
   getDesign(deviceId: string, designId: string): Promise<Design>;

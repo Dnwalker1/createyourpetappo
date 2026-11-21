@@ -45,6 +45,9 @@ type AppState = {
   sitting: string;
   setSitting: (sitting: string) => void;
   setText: (text: string) => void;
+  /** The owner's note on how the pet looks ("docked tail"). Resets with a new photo. */
+  petNotes: string;
+  setPetNotes: (notes: string) => void;
   /** Turning it off also unticks the consent. */
   setIncludePeople: (on: boolean) => void;
   setPeopleConsent: (on: boolean) => void;
@@ -79,6 +82,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [job, setJob] = useState('');
   const [sitting, setSitting] = useState('');
   const [text, setText] = useState('');
+  const [petNotes, setPetNotes] = useState('');
   const [includePeople, setIncludePeopleState] = useState(false);
   const [peopleConsent, setPeopleConsent] = useState(false);
   const [activeDesign, setActiveDesign] = useState<Design | null>(null);
@@ -139,6 +143,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setPhotoId(null);
     setIncludePeopleState(false);
     setPeopleConsent(false);
+    setPetNotes('');
   }, []);
 
   const ensureUploaded = useCallback(async () => {
@@ -166,9 +171,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       styleId,
       text: trimmed || undefined,
       includePeople: includePeople && peopleConsent,
+      petNotes: petNotes.trim() || undefined,
     });
     return designId;
-  }, [deviceId, ensureUploaded, styleId, job, sitting, text, includePeople, peopleConsent]);
+  }, [deviceId, ensureUploaded, styleId, job, sitting, text, includePeople, peopleConsent, petNotes]);
 
   const value = useMemo<AppState>(
     () => ({
@@ -189,6 +195,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       sitting,
       setSitting,
       setText,
+      petNotes,
+      setPetNotes,
       setIncludePeople,
       setPeopleConsent,
       setActiveDesign,
@@ -202,7 +210,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeFromCart: (id) => setCart((c) => c.filter((i) => i.id !== id)),
       clearCart: () => setCart([]),
     }),
-    [ready, deviceId, photo, styleId, job, sitting, text, includePeople, peopleConsent, activeDesign, cart, pricesVersion, setPhoto, setIncludePeople, ensureUploaded, startDesign],
+    [ready, deviceId, photo, styleId, job, sitting, text, includePeople, peopleConsent, activeDesign, cart, pricesVersion, setPhoto, setIncludePeople, ensureUploaded, startDesign, petNotes],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
