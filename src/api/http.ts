@@ -288,6 +288,9 @@ export function createHttpApi(
     async createDesign(deviceId, input) {
       const body = {
         fileId: input.photoId,
+        // One number per press of Generate (21 Nov 2026): if the same request
+        // reaches the server twice, it returns the design already started.
+        requestId: `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`,
         style: input.styleId,
         ...(input.text ? { text: input.text } : {}),
         ...(input.petNotes ? { petNotes: input.petNotes } : {}),

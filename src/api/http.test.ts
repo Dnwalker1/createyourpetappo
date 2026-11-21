@@ -164,7 +164,10 @@ describe("http api", () => {
     });
     await jest.advanceTimersByTimeAsync(2000);
     await expect(pending).resolves.toEqual({ designId: "d9" });
+    // The retry carries the same request number, so it can't start a second design.
+    expect(body(calls[1].init).requestId).toBe(body(calls[0].init).requestId);
     expect(body(calls[1].init)).toEqual({
+      requestId: expect.any(String),
       fileId: "file-1",
       style: "poster",
       text: "BISCUIT",
@@ -283,6 +286,7 @@ describe("http api", () => {
       includePeople: true,
     });
     expect(body(calls[0].init)).toEqual({
+      requestId: expect.any(String),
       fileId: "f",
       style: "poster",
       includePeople: true,
@@ -293,7 +297,7 @@ describe("http api", () => {
       styleId: "stamp",
       includePeople: false,
     });
-    expect(body(calls[1].init)).toEqual({ fileId: "f", style: "stamp" });
+    expect(body(calls[1].init)).toEqual({ requestId: expect.any(String), fileId: "f", style: "stamp" });
     expect(await api().getDesign(DEVICE, "d1")).toMatchObject({
       status: "rejected",
       problem: "PHOTO_REJECTED",

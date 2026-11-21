@@ -20,6 +20,9 @@ const REJECT_REASONS: Record<string, string> = {
 const pawSunset = require('../../assets/images/brand/paw-sunset-icon.webp');
 const POLL_MS = 2000;
 const EXPECTED_MS = 60_000;
+// After this long, say it's slow but still coming (21 Nov 2026). The server
+// keeps working on a slow design for up to 12 minutes and finishes it.
+const SLOW_MS = 4 * 60_000;
 
 export default function Generating() {
   const { designId } = useLocalSearchParams<{ designId: string }>();
@@ -125,6 +128,11 @@ export default function Generating() {
             ? 'Now let\u2019s put it on a shirt for you to fall in love with.'
             : 'This should take about a minute, then we\u2019ll put it on a shirt for you to fall in love with.'}
         </Body>
+        {!offline && !done && elapsed > SLOW_MS ? (
+          <Body tone="dark" style={{ textAlign: 'center', fontSize: 15, color: colors.gold }}>
+            This one is taking longer than usual. It&apos;s still being made, and it will appear in Your designs when it&apos;s ready, even if you leave this screen.
+          </Body>
+        ) : null}
         {offline && !done ? (
           <Body tone="dark" style={{ textAlign: 'center', fontSize: 15, color: colors.gold }}>
             We can&apos;t reach the studio from your phone right now. Your design is still being made. Check your connection and it will appear here.
